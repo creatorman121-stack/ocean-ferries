@@ -25,7 +25,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>OceanJet Baggage Pro V39</title>
+    <title>OceanJet Baggage Pro V35</title>
     <!-- V17 GitHub Pages / PWA package metadata -->
     <meta name="theme-color" content="#070b19">
     <meta name="application-name" content="OceanJet Baggage Pro">
@@ -35,7 +35,7 @@
     <link id="v17ManifestLink" rel="manifest" href="manifest.webmanifest">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
         :root {
             --bg-base: #070b19;
@@ -179,10 +179,6 @@
         /* Map */
         #liveMap{height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
     </style>
-
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 </head>
 <body>
 <div class="app">
@@ -235,168 +231,9 @@
     </div>
 </div>
 
-<!-- V39 early mobile boot: renders a usable screen before CDN scripts load -->
-<style id="oj39EarlyBootStyles">
-  .oj39-early-panel{margin:16px;border:1px solid rgba(103,232,249,.24);border-radius:26px;padding:18px;background:linear-gradient(135deg,rgba(15,23,42,.9),rgba(8,47,73,.5));box-shadow:0 24px 80px rgba(0,0,0,.32);color:#f8fafc}.oj39-early-panel h1{font-size:1.65rem;margin:0 0 6px;letter-spacing:-.04em}.oj39-early-panel p{color:#94a3b8;margin:0 0 14px;line-height:1.5}.oj39-early-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.oj39-early-btn{border:1px solid rgba(125,211,252,.24);border-radius:18px;padding:14px;background:rgba(15,23,42,.72);color:#f8fafc;text-align:left;font-weight:900;min-height:74px}.oj39-early-btn small{display:block;color:#94a3b8;font-weight:700;margin-top:5px}@media(max-width:430px){.oj39-early-grid{grid-template-columns:1fr}.oj39-early-panel{margin:14px}}
-body:not(.oj39-ready) #drawerMenu .drawer-item:nth-child(n+6){display:none!important}body:not(.oj39-ready) .drawer-logout,body:not(.oj39-ready) #headerLogoutBtn{display:none!important}</style>
-<script id="oj39EarlyBootScript">
-(function(){
-  function $(id){return document.getElementById(id)}
-  function show(){
-    try{
-      var lo=$('loginOverlay'); if(lo) lo.style.display='none';
-      var dash=$('view-dashboard'); if(!dash) return;
-      document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active')});
-      dash.classList.add('active');
-      dash.innerHTML='<div class="oj39-early-panel"><div style="font-size:.72rem;font-weight:900;letter-spacing:.16em;color:#67e8f9;text-transform:uppercase">⚡ V39 Stable Boot</div><h1>Passenger Kiosk</h1><p>No login needed. The app is opening the stable role-based interface. Passenger tools are shown first while cashier/admin tools stay locked.</p><div class="oj39-early-grid"><button class="oj39-early-btn" onclick="window.oj39Open?oj39Open(\'calculator\'):oj39EarlyNotice()">🧮 Baggage Fee<small>Official calculator</small></button><button class="oj39-early-btn" onclick="window.oj39Open?oj39Open(\'damage\'):oj39EarlyNotice()">🧳 Damage Report<small>Photo evidence</small></button><button class="oj39-early-btn" onclick="window.oj39Open?oj39Open(\'claimstatus\'):oj39EarlyNotice()">🔎 Claim Status<small>Track reports</small></button><button class="oj39-early-btn" onclick="window.oj39Open?oj39Open(\'v39-login-cashier\'):oj39EarlyNotice()">💼 Cashier Login<small>Counter tools</small></button><button class="oj39-early-btn" onclick="window.oj39Open?oj39Open(\'v39-login-admin\'):oj39EarlyNotice()">🔐 Admin Login<small>Full access</small></button></div><p style="margin-top:12px;font-size:.78rem">If your phone still had V37/V38 cached, V39 will clear old cache when the full engine finishes loading.</p></div>';
-      var dl=document.querySelector('.drawer-logout'); if(dl) dl.style.setProperty('display','none','important'); var hl=$('headerLogoutBtn'); if(hl) hl.style.setProperty('display','none','important'); var menu=$('drawerMenu'); if(menu) menu.innerHTML='<div class="drawer-item active" onclick="window.oj39Open?oj39Open(\'v39-home\'):oj39EarlyNotice()"><i>🏠</i> Passenger Home</div><div class="drawer-item" onclick="window.oj39Open?oj39Open(\'calculator\'):oj39EarlyNotice()"><i>🧮</i> Baggage Fee</div><div class="drawer-item" onclick="window.oj39Open?oj39Open(\'damage\'):oj39EarlyNotice()"><i>🧳</i> Damage Report</div><div class="drawer-item" onclick="window.oj39Open?oj39Open(\'v39-login-cashier\'):oj39EarlyNotice()"><i>💼</i> Cashier Login</div><div class="drawer-item" onclick="window.oj39Open?oj39Open(\'v39-login-admin\'):oj39EarlyNotice()"><i>🔐</i> Admin Login</div>';
-      var brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';
-      document.title='OceanJet Baggage Pro V39';
-    }catch(e){console.warn('V39 early boot failed',e)}
-  }
-  window.oj39EarlyNotice=function(){var t=document.createElement('div');t.textContent='Opening tools. Please wait one moment...';t.style.cssText='position:fixed;left:16px;right:16px;bottom:18px;z-index:9999;padding:14px;border-radius:18px;background:rgba(15,23,42,.96);border:1px solid rgba(125,211,252,.25);color:white;font-weight:900';document.body.appendChild(t);setTimeout(function(){t.remove()},2200)};
-  function lockMenu(){
-    var menu=$('drawerMenu'); if(!menu || menu.__oj39EarlyLocked || !window.MutationObserver) return;
-    menu.__oj39EarlyLocked=true;
-    var busy=false;
-    new MutationObserver(function(){
-      if(window.oj39Open || busy) return;
-      var txt=(menu.innerText||'');
-      if(txt.indexOf('Export Center')<0 && txt.indexOf('Safe Mode')<0 && txt.indexOf('Admin Panel')<0) return;
-      busy=true; setTimeout(function(){busy=false; show();},0);
-    }).observe(menu,{childList:true,subtree:true,characterData:true});
-  }
-  show(); lockMenu();
-  clearInterval(window.__oj39EarlyGuard);
-  var guardCount=0;
-  window.__oj39EarlyGuard=setInterval(function(){
-    guardCount++;
-    if(window.oj39Open || guardCount>60){clearInterval(window.__oj39EarlyGuard);return;}
-    show();
-  },1200);
-})();
-</script>
-
-<!-- V39 STABLE CONTROL TOWER PATCH: clean role UI + mobile blank-screen recovery, built on stable V35 base -->
-<style id="oj39StableControlStyles">
-  :root{
-    --oj39-bg:#020617;
-    --oj39-panel:rgba(15,23,42,.82);
-    --oj39-card:rgba(15,23,42,.72);
-    --oj39-line:rgba(125,211,252,.24);
-    --oj39-cyan:#67e8f9;
-    --oj39-blue:#60a5fa;
-    --oj39-pink:#fb7185;
-    --oj39-green:#86efac;
-    --oj39-amber:#fbbf24;
-    --oj39-text:#f8fafc;
-    --oj39-muted:#94a3b8;
-  }
-  html,body{min-height:100%;overflow-x:hidden!important;background:radial-gradient(circle at 18% -12%,rgba(56,189,248,.22),transparent 38%),radial-gradient(circle at 82% 12%,rgba(251,113,133,.18),transparent 36%),linear-gradient(135deg,#020617 0%,#08111f 55%,#111827 100%)!important;}
-  body::before{content:"";position:fixed;inset:0;z-index:-2;background-image:linear-gradient(rgba(148,163,184,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.06) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.92),rgba(0,0,0,.22));pointer-events:none;}
-  body::after{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(90deg,transparent,rgba(125,211,252,.06),transparent);animation:oj39Scan 8s linear infinite;pointer-events:none;}
-  @keyframes oj39Scan{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
-  .app{min-height:100svh!important;background:transparent!important;}
-  .header{position:sticky!important;top:0;z-index:70;background:rgba(15,23,42,.86)!important;border-bottom:1px solid rgba(125,211,252,.18)!important;box-shadow:0 12px 38px rgba(0,0,0,.24);backdrop-filter:blur(18px);}
-  .brand{letter-spacing:.08em!important;color:#f8fafc!important;font-weight:900!important;text-shadow:0 0 18px rgba(103,232,249,.18);}
-  .hamburger{border:1px solid rgba(125,211,252,.28);border-radius:16px;background:rgba(2,6,23,.38);padding:8px;}
-  .view{display:none!important;min-height:calc(100svh - 76px)!important;padding:16px!important;box-sizing:border-box!important;}
-  .view.active{display:block!important;}
-  .side-drawer{background:rgba(2,6,23,.94)!important;border-right:1px solid rgba(125,211,252,.22)!important;box-shadow:20px 0 80px rgba(0,0,0,.46)!important;backdrop-filter:blur(22px);}
-  .drawer-menu{padding:16px 12px 28px!important;}
-  .drawer-item{border:1px solid rgba(125,211,252,.14)!important;background:rgba(15,23,42,.68)!important;border-radius:18px!important;margin:8px 0!important;min-height:58px!important;font-weight:850!important;letter-spacing:.02em!important;box-shadow:0 10px 28px rgba(0,0,0,.18);}
-  .drawer-item.active{border-color:rgba(103,232,249,.54)!important;background:linear-gradient(135deg,rgba(14,165,233,.24),rgba(15,23,42,.88))!important;box-shadow:0 0 0 1px rgba(103,232,249,.14),0 16px 36px rgba(14,165,233,.16)!important;}
-  .drawer-close{background:rgba(15,23,42,.86)!important;border:1px solid rgba(125,211,252,.25)!important;border-radius:18px!important;}
-  .drawer-logout{border-radius:16px!important;background:rgba(251,113,133,.14)!important;border:1px solid rgba(251,113,133,.22)!important;}
-  #aiFloatBtn,.ai-float-btn,.chat-panel,#chatPanel,#oj33Fab,#v6FloatTools,#v7CommandBtn,#v7MiniDock,#v8Dock,#v9CleanDock,#v10Dock,#v11Dock,#bottomNavSafe,#v30FloatingHealth,.v30-floating-health,.bottom-nav,.quick-dock,.quickDock,.ai-float-btn{display:none!important;visibility:hidden!important;pointer-events:none!important;}
-  .oj39-shell{max-width:1160px;margin:0 auto;}
-  .oj39-hero{position:relative;overflow:hidden;border:1px solid rgba(125,211,252,.24);border-radius:28px;background:linear-gradient(135deg,rgba(15,23,42,.88),rgba(8,47,73,.54));box-shadow:0 24px 80px rgba(0,0,0,.32);padding:22px;margin-bottom:14px;}
-  .oj39-hero::after{content:"";position:absolute;right:-80px;top:-80px;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(103,232,249,.22),transparent 66%);}
-  .oj39-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.68rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--oj39-cyan);border:1px solid rgba(103,232,249,.24);border-radius:999px;padding:7px 10px;background:rgba(8,47,73,.44);}
-  .oj39-hero h1{margin:14px 0 6px;font-size:clamp(1.7rem,7vw,3.1rem);line-height:1.02;color:var(--oj39-text);letter-spacing:-.045em;}
-  .oj39-hero p{margin:0;color:var(--oj39-muted);font-size:.94rem;line-height:1.55;max-width:780px;}
-  .oj39-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-  .oj39-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
-  .oj39-card,.oj39-action,.oj39-kpi{border:1px solid rgba(125,211,252,.18);border-radius:24px;background:rgba(15,23,42,.72);box-shadow:0 16px 44px rgba(0,0,0,.24);backdrop-filter:blur(16px);}
-  .oj39-card{padding:16px;margin-bottom:14px;}
-  .oj39-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-  .oj39-title h2{margin:0;color:var(--oj39-text);font-size:1.05rem;letter-spacing:-.02em;}
-  .oj39-title small{color:var(--oj39-muted);font-size:.72rem;}
-  .oj39-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
-  .oj39-action{cursor:pointer;text-align:left;color:var(--oj39-text);padding:15px;min-height:128px;transition:.18s ease transform,.18s ease border-color,.18s ease box-shadow;background:linear-gradient(135deg,rgba(15,23,42,.82),rgba(15,23,42,.54));}
-  .oj39-action:hover,.oj39-action:active{transform:translateY(-2px);border-color:rgba(103,232,249,.5);box-shadow:0 20px 54px rgba(14,165,233,.16);}
-  .oj39-action .ico{font-size:1.72rem;display:block;margin-bottom:12px;}
-  .oj39-action b{display:block;font-size:.98rem;margin-bottom:6px;}
-  .oj39-action span{display:block;color:var(--oj39-muted);font-size:.74rem;line-height:1.42;}
-  .oj39-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px;}
-  .oj39-kpi{padding:13px;}
-  .oj39-kpi b{display:block;color:var(--oj39-text);font-size:1.05rem;}
-  .oj39-kpi span{display:block;color:var(--oj39-muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;margin-top:4px;}
-  .oj39-chip{display:inline-flex;align-items:center;border-radius:999px;padding:7px 10px;font-size:.67rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;border:1px solid rgba(125,211,252,.24);background:rgba(15,23,42,.78);color:var(--oj39-cyan);white-space:nowrap;}
-  .oj39-chip.good{color:var(--oj39-green);border-color:rgba(134,239,172,.3);background:rgba(22,101,52,.18)}
-  .oj39-chip.warn{color:var(--oj39-amber);border-color:rgba(251,191,36,.3);background:rgba(120,53,15,.18)}
-  .oj39-chip.hot{color:var(--oj39-pink);border-color:rgba(251,113,133,.32);background:rgba(136,19,55,.2)}
-  .oj39-login{max-width:520px;margin:20px auto!important;}
-  .oj39-login input{border-radius:16px!important;border:1px solid rgba(125,211,252,.2)!important;background:rgba(2,6,23,.5)!important;color:#fff!important;min-height:48px!important;}
-  .oj39-login button,.oj39-card button,.oj39-actionbar button{border-radius:16px!important;min-height:46px!important;font-weight:900!important;}
-  .oj39-actionbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
-  .oj39-note{border:1px dashed rgba(125,211,252,.25);border-radius:20px;padding:12px;color:var(--oj39-muted);background:rgba(2,6,23,.28);font-size:.8rem;line-height:1.5;}
-  .oj39-role-passenger .role-badge{color:var(--oj39-green)!important}.oj39-role-cashier .role-badge{color:var(--oj39-amber)!important}.oj39-role-admin .role-badge{color:var(--oj39-pink)!important}
-  @media(max-width:760px){.view{padding:14px!important}.oj39-actions,.oj39-grid{grid-template-columns:1fr 1fr}.oj39-kpis{grid-template-columns:1fr 1fr}.oj39-hero{padding:18px;border-radius:24px}.oj39-action{min-height:118px}.brand{font-size:.86rem!important}.clock{display:none!important}}
-  @media(max-width:430px){.oj39-actions,.oj39-grid,.oj39-grid2{grid-template-columns:1fr}.oj39-action{min-height:auto}.oj39-hero h1{font-size:1.86rem}.oj39-title{align-items:flex-start;flex-direction:column}.header{min-height:64px!important}.oj39-actionbar{grid-template-columns:1fr}}
-</style>
-<script id="oj39StableControlScript">
-(function(){
-  'use strict';
-  const VERSION='V39 Stable Control Tower';
-  const ROLE_KEY='oj39_role';
-  const OWN=['v39-home','v39-login-cashier','v39-login-admin','v39-counter','v39-admin','v39-system','v39-reports','v39-help'];
-  let LEGACY_SHOW=window.showView;
-  const $=id=>document.getElementById(id);
-  const qsa=(sel,root=document)=>Array.from(root.querySelectorAll(sel));
-  const now=()=>new Date().toLocaleString('en-PH',{hour12:true});
-  const roleLabel=r=>r==='admin'?'Admin':r==='cashier'?'Cashier':'Passenger';
-  const safeDB=()=>{try{return window.DB||JSON.parse(localStorage.getItem('off_baggage_v14')||'{}')}catch(e){return {}}};
-  function ensureView(name){const id=name.startsWith('view-')?name:'view-'+name;let v=$(id);if(!v){const app=document.querySelector('.app')||document.body;v=document.createElement('div');v.id=id;v.className='view';app.appendChild(v)}return v}
-  function role(){const r=sessionStorage.getItem(ROLE_KEY)||localStorage.getItem(ROLE_KEY)||'passenger';return /admin|cashier/.test(r)?r:'passenger'}
-  function setRole(r,open){r=/admin|cashier/.test(r)?r:'passenger';try{sessionStorage.setItem(ROLE_KEY,r);localStorage.setItem(ROLE_KEY,r)}catch(e){}try{window.currentRole=r==='admin'?'supervisor':r==='cashier'?'cashier':null}catch(e){}document.body.classList.remove('oj39-role-passenger','oj39-role-cashier','oj39-role-admin');document.body.classList.add('oj39-role-'+r);const badge=$('roleBadge');if(badge)badge.textContent=r==='admin'?'👑 Admin':r==='cashier'?'💼 Cashier':'👤 Passenger';const lo=$('loginOverlay');if(lo)lo.style.display='none';buildDrawer();open39(open||'v39-home')}
-  function allowed(name){const r=role();name=alias(name);if(OWN.includes(name)||['calculator','fares','schedules','damage','claimstatus','lostbaggage','v35-home'].includes(name))return true;if(r==='admin')return true;if(r==='cashier')return ['history','staffcounter','v30-claim','v35-reports','exportcenter','dashboard','ar'].includes(name);return false}
-  function alias(name){const m={dashboard:'v39-home','v35-home':'v39-home','home:' :'v39-home','cashier:' :'v39-login-cashier','adminlogin':'v39-login-admin','reports':'v39-reports','pdf':'v39-reports'};return m[name]||name}
-  function activate(name){qsa('.view').forEach(v=>v.classList.remove('active'));const v=ensureView(name);v.classList.add('active');qsa('#drawerMenu .drawer-item').forEach(el=>el.classList.toggle('active',el.dataset.view===name));try{if(typeof window.closeDrawer==='function')window.closeDrawer()}catch(e){}try{scrollTo({top:0,behavior:'smooth'})}catch(e){scrollTo(0,0)}return v}
-  function renderAction(icon,title,desc,target,tone){return `<button class="oj39-action" onclick="oj39Open('${target}')"><span class="ico">${icon}</span><b>${title}</b><span>${desc}</span></button>`}
-  function renderFn(icon,title,desc,fn){return `<button class="oj39-action" onclick="${fn}"><span class="ico">${icon}</span><b>${title}</b><span>${desc}</span></button>`}
-  function kpis(){const db=safeDB(),stats=db.stats||{},comps=db.comps||db.history||[];let claims=0;try{claims=(JSON.parse(localStorage.getItem('damage_master_log')||'{}').cases||[]).length}catch(e){}return `<div class="oj39-kpis"><div class="oj39-kpi"><b>${stats.transactions||comps.length||0}</b><span>Transactions</span></div><div class="oj39-kpi"><b>${stats.totalKg||0}kg</b><span>Baggage weight</span></div><div class="oj39-kpi"><b>${claims}</b><span>Claims</span></div><div class="oj39-kpi"><b>${navigator.onLine?'Online':'Offline'}</b><span>Device status</span></div></div>`}
-  function renderHome(){const r=role();const v=activate('v39-home');const isP=r==='passenger',isC=r==='cashier',isA=r==='admin';v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">⚡ ${VERSION} · ${roleLabel(r)} mode</span><h1>${isP?'Passenger Kiosk':isC?'Counter Desk':'Admin Control Tower'}</h1><p>${isP?'No login required. Passengers see only public tools: baggage fee checking, damage report, claim status, fares, and schedules. Cashier and admin tools stay hidden until login.':isC?'Cashier mode shows only counter tools for baggage calculation, receipts, claim intake, and transaction review. Admin settings remain hidden.':'Admin has the full system: passenger tools, cashier workflow, PDF reports, backup, diagnostics, and configuration.'}</p>${kpis()}</div>${isP?passengerHome():isC?cashierHome():adminHome()}<div class="oj39-note">Mobile recovery is active. If a browser is still holding an older V37/V38 cache, this version clears old app caches and reopens the stable Passenger screen.</div></div>`}
-  function passengerHome(){return `<div class="oj39-card"><div class="oj39-title"><h2>Passenger tools only</h2><span class="oj39-chip good">Default access</span></div><div class="oj39-actions">${renderAction('🧮','Baggage Fee','Open the official baggage calculator.','calculator')}${renderAction('🧳','Damage Report','Capture baggage damage/evidence workflow.','damage')}${renderAction('🔎','Claim Status','Search claim or lost/damaged baggage record.','claimstatus')}${renderAction('💵','Fares & Slabs','View route fares and baggage slabs.','fares')}${renderAction('🕐','Schedules','View route schedules.','schedules')}${renderAction('📝','Lost/Damaged Form','Create a passenger claim record.','lostbaggage')}</div></div><div class="oj39-card"><div class="oj39-title"><h2>Staff login</h2><span class="oj39-chip">Locked tools</span></div><div class="oj39-actions">${renderAction('💼','Cashier Login','Unlock counter-only workflow.','v39-login-cashier')}${renderAction('🔐','Admin Login','Unlock full control tower.','v39-login-admin')}${renderAction('❔','Help / Guide','Simple role and upload guide.','v39-help')}</div></div>`}
-  function cashierHome(){return `<div class="oj39-card"><div class="oj39-title"><h2>Cashier workflow</h2><span class="oj39-chip warn">Counter access</span></div><div class="oj39-actions">${renderAction('🧮','Baggage Calculator','Official fee computation.','calculator')}${renderAction('📄','PDF Receipts','Open professional PDF export center.','v39-reports')}${renderAction('🧳','Claim Studio','Prepare structured claim packet.','v30-claim')}${renderAction('📷','Damage Capture','Capture photos and evidence.','damage')}${renderAction('📋','Transactions','Review saved baggage calculations.','history')}${renderAction('👥','Staff Counter','Review passenger requests.','staffcounter')}</div></div><div class="oj39-card"><div class="oj39-title"><h2>Role</h2><span class="oj39-chip warn">Cashier</span></div><div class="oj39-actions">${renderAction('🔐','Admin Login','Unlock all tools.','v39-login-admin')}${renderFn('🚪','Return to Passenger','Lock cashier tools.','oj39Logout()')}</div></div>`}
-  function adminHome(){return `<div class="oj39-card"><div class="oj39-title"><h2>Control groups</h2><span class="oj39-chip hot">Full access</span></div><div class="oj39-actions">${renderAction('👤','Passenger Experience','Open public passenger tools.','v39-home')}${renderAction('💼','Cashier Desk','Open cashier tools and receipts.','v39-counter')}${renderAction('📄','PDF Report Center','Receipts, claims, transactions, audit reports.','v39-reports')}${renderAction('⚙️','Admin Panel','Routes, slabs, prices, settings.','admin')}${renderAction('🛡️','System Check','Storage health and recovery.','v39-system')}${renderAction('🧭','Advanced Modules','Open advanced legacy tools.','v39-admin')}</div></div><div class="oj39-card"><div class="oj39-title"><h2>Admin essentials</h2><span class="oj39-chip hot">Everything visible</span></div><div class="oj39-actions">${renderAction('📤','Export Center','Protected legacy export tools.','exportcenter')}${renderAction('🗺️','Route Intelligence','Map and route pressure board.','map')}${renderAction('🤖','Offline AI','SOP helper and assistant.','v31-ai')}${renderAction('🛟','Site Health','Diagnostics and readiness checks.','sitehealth')}${renderFn('🚪','Return to Passenger','Lock admin tools.','oj39Logout()')}</div></div>`}
-  function renderLogin(which){const admin=which==='admin';const v=activate(admin?'v39-login-admin':'v39-login-cashier');v.innerHTML=`<div class="oj39-shell"><div class="oj39-card oj39-login"><div class="oj39-title"><div><h2>${admin?'🔐 Admin Login':'💼 Cashier Login'}</h2><small>${admin?'Full access for supervisor/admin only.':'Counter access for cashier tools only.'}</small></div><span class="oj39-chip ${admin?'hot':'warn'}">${admin?'Full access':'Counter'}</span></div><div class="input-group"><label>Username</label><input id="oj39_${which}_u" autocomplete="username" placeholder="${admin?'admin / demo / supervisor':'cashier'}"></div><div class="input-group"><label>Password</label><input id="oj39_${which}_p" type="password" autocomplete="current-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')oj39DoLogin('${which}')"></div><button class="primary block" onclick="oj39DoLogin('${which}')">Login as ${admin?'Admin':'Cashier'}</button><button class="accent block" style="margin-top:8px" onclick="oj39Logout()">Continue as Passenger</button><div class="oj39-note" style="margin-top:12px">${admin?'Admin can see everything.':'Cashier cannot see admin backup, settings, and full control tools.'}</div></div></div>`;setTimeout(()=>{$(`oj39_${which}_u`)?.focus()},80)}
-  function renderCounter(){const v=activate('v39-counter');v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">💼 Counter Desk</span><h1>Cashier Workflow</h1><p>Fast access for the official calculation, receipt PDF, claim packet, and transaction history.</p>${kpis()}</div><div class="oj39-card"><div class="oj39-actions">${renderAction('🧮','Baggage Calculator','Compute official baggage fee.','calculator')}${renderAction('📄','PDF Center','Download receipt and reports as PDF.','v39-reports')}${renderAction('📋','Transaction History','Review saved calculations.','history')}${renderAction('🧳','Claim Studio','Prepare claim packet.','v30-claim')}${renderAction('📷','Damage Evidence','Capture damage evidence.','damage')}${renderAction('👥','Staff Counter','Passenger request queue.','staffcounter')}</div></div></div>`}
-  function renderReports(){const v=activate('v39-reports');v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">📄 Professional PDFs</span><h1>Report Center</h1><p>Receipts, claim summaries, transaction summaries, and admin reports should be exported as professional PDF files.</p>${kpis()}</div><div class="oj39-card"><div class="oj39-actions">${renderAction('📄','Open PDF Center','Use the existing PDF report engine.','v35-reports')}${renderAction('🧮','Calculator Receipt','Compute and download receipt PDF.','calculator')}${renderAction('📋','Transactions','Review and export transaction history.','history')}${renderAction('🧳','Claim Packet','Open claim studio for report PDF.','v30-claim')}${renderAction('📤','Legacy Export Center','Admin/cashier protected export screen.','exportcenter')}</div></div></div>`}
-  function renderAdminModules(){const v=activate('v39-admin');v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">🧭 Advanced</span><h1>Advanced Modules</h1><p>Only admin can access the older experimental and management modules. They are grouped here instead of cluttering the passenger menu.</p></div><div class="oj39-card"><div class="oj39-actions">${renderAction('⚙️','Admin Panel','Manage fares, slabs, credentials.','admin')}${renderAction('🛡️','Data Guardian','Storage and backup tools.','v33-data')}${renderAction('🗺️','Route Map','Map and route intelligence.','map')}${renderAction('🧠','Service OS','Operations service module.','v30-os')}${renderAction('🤖','AI Assistant','Offline SOP helper.','v31-ai')}${renderAction('🛟','Site Test','Diagnostics/readiness check.','sitehealth')}</div></div></div>`}
-  function renderSystem(){const v=activate('v39-system');let cacheText='Checking cache...';v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">🛡️ Recovery</span><h1>System Check</h1><p>Mobile boot guard, cache cleaner, storage health, and blank-screen recovery.</p>${kpis()}</div><div class="oj39-card"><div class="oj39-title"><h2>Quick fixes</h2><span class="oj39-chip good">Stable</span></div><div class="oj39-actions">${renderFn('🧹','Clear Old Cache','Remove old V37/V38 app cache from this browser.','oj39ClearCache()')}${renderFn('🔄','Reopen Home','Repair blank screen and reopen Passenger/Home.','oj39Repair()')}${renderAction('🛟','Legacy Site Health','Open existing diagnostics.','sitehealth')}${renderAction('📤','Backup / Export','Open protected export center.','exportcenter')}</div><div class="oj39-note" id="oj39CacheNote" style="margin-top:12px">${cacheText}</div></div></div>`;updateCacheNote()}
-  function renderHelp(){const v=activate('v39-help');v.innerHTML=`<div class="oj39-shell"><div class="oj39-hero"><span class="oj39-eyebrow">❔ Guide</span><h1>Role Logic</h1><p>Common sense access: first visitor is Passenger. Cashier logs in for counter tools. Admin logs in for everything.</p></div><div class="oj39-grid"><div class="oj39-card"><div class="oj39-title"><h2>Passenger</h2><span class="oj39-chip good">Default</span></div><p class="oj39-note">No login. Only public passenger tools are visible.</p></div><div class="oj39-card"><div class="oj39-title"><h2>Cashier</h2><span class="oj39-chip warn">Counter</span></div><p class="oj39-note">Can use calculator, receipts, claims, transaction review. No admin settings.</p></div><div class="oj39-card"><div class="oj39-title"><h2>Admin</h2><span class="oj39-chip hot">Full</span></div><p class="oj39-note">Can access all passenger, cashier, reporting, backup, and advanced tools.</p></div></div></div>`}
-  function openLegacy(name){if(!allowed(name)){return open39(role()==='passenger'?'v39-login-cashier':'v39-login-admin')}try{const legacy=(window.__oj39LegacyShow&&window.__oj39LegacyShow!==open39)?window.__oj39LegacyShow:((LEGACY_SHOW&&LEGACY_SHOW!==open39)?LEGACY_SHOW:null);if(typeof legacy==='function'){legacy(name)}else{activate(name)}setTimeout(()=>{buildDrawer();hideClutter();blankGuard()},120)}catch(e){console.error('legacy open failed',name,e);renderHome();toast('Recovered from legacy tool error: '+(e.message||e))}}
-  function open39(name){name=alias(name);if(!allowed(name)){toast('Login required for this tool.');return open39(role()==='passenger'?'v39-login-cashier':'v39-login-admin')}if(name==='v39-home')return renderHome();if(name==='v39-login-cashier')return renderLogin('cashier');if(name==='v39-login-admin')return renderLogin('admin');if(name==='v39-counter')return renderCounter();if(name==='v39-admin')return renderAdminModules();if(name==='v39-system')return renderSystem();if(name==='v39-reports')return renderReports();if(name==='v39-help')return renderHelp();return openLegacy(name)}
-  function nav(){const r=role();const common=[['v39-home','🏠','Home'],['calculator','🧮','Baggage Fee'],['damage','🧳','Damage Report'],['claimstatus','🔎','Claim Status'],['fares','💵','Fares'],['schedules','🕐','Schedules']];const pax=[...common,['v39-login-cashier','💼','Cashier Login'],['v39-login-admin','🔐','Admin Login'],['v39-help','❔','Guide']];const cashier=[['v39-home','💼','Counter Home'],['calculator','🧮','Calculator'],['v39-reports','📄','PDF Center'],['damage','🧳','Damage Capture'],['v30-claim','📝','Claim Studio'],['history','📋','Transactions'],['v39-login-admin','🔐','Admin Login'],['v39-home','🚪','Passenger Mode']];const admin=[['v39-home','👑','Control Tower'],['v39-counter','💼','Counter Desk'],['calculator','🧮','Calculator'],['v39-reports','📄','PDF Center'],['admin','⚙️','Admin Panel'],['v39-system','🛡️','System Check'],['v39-admin','🧭','Advanced Modules'],['v39-home','🚪','Passenger Mode']];return r==='admin'?admin:r==='cashier'?cashier:pax}
-  let building=false;
-  function buildDrawer(){const m=$('drawerMenu');if(!m||building)return;building=true;const r=role();m.dataset.oj39Drawer='1';m.innerHTML=`<div class="oj39-note" style="margin:0 0 12px"><b>${roleLabel(r)} Mode</b><br>${r==='passenger'?'Public tools only.':r==='cashier'?'Counter tools only.':'Full access.'}</div>`+nav().map(([view,icon,label])=>`<div class="drawer-item" data-view="${view}" onclick="oj39Open('${view}')"><i>${icon}</i> ${label}</div>`).join('');building=false;hideClutter()}
-  function hideClutter(){qsa('#oj33Fab,#v6FloatTools,#v7CommandBtn,#v7MiniDock,#v8Dock,#v9CleanDock,#v10Dock,#v11Dock,#bottomNavSafe,#v30FloatingHealth,.v30-floating-health,.ai-float-btn,#aiFloatBtn,.chat-panel,#chatPanel').forEach(el=>{el.style.setProperty('display','none','important');el.style.setProperty('visibility','hidden','important')});const brand=document.querySelector('.brand');if(brand)brand.textContent='OceanJet Baggage Pro';document.title='OceanJet Baggage Pro V39'}
-  function toast(msg){try{if(typeof window.toast==='function')window.toast(msg);else{let t=$('oj39Toast');if(!t){t=document.createElement('div');t.id='oj39Toast';t.style.cssText='position:fixed;left:16px;right:16px;bottom:18px;z-index:9999;padding:14px 16px;border-radius:18px;background:rgba(15,23,42,.94);border:1px solid rgba(125,211,252,.25);color:#f8fafc;font-weight:800;box-shadow:0 20px 60px rgba(0,0,0,.35)';document.body.appendChild(t)}t.textContent=msg;t.style.display='block';clearTimeout(t._timer);t._timer=setTimeout(()=>t.style.display='none',2800)}}catch(e){}}
-  function creds(){const db=safeDB();return {cashier:(db.creds&&db.creds.cashier)||{u:'cashier',p:'cashier'},admin:(db.creds&&db.creds.supervisor)||{u:'demo',p:'demo'}}}
-  function doLogin(which){const u=($(`oj39_${which}_u`)?.value||'').trim(),p=($(`oj39_${which}_p`)?.value||'').trim();if(!u||!p)return toast('Please enter username and password.');const c=creds();const okCash=which==='cashier'&&((u===c.cashier.u&&p===c.cashier.p)||(u==='cashier'&&p==='cashier'));const okAdmin=which==='admin'&&((u===c.admin.u&&p===c.admin.p)||(u==='admin'&&p==='admin')||(u==='demo'&&p==='demo')||(u==='supervisor'&&p==='supervisor'));if(okCash){toast('Cashier tools unlocked.');return setRole('cashier','v39-home')}if(okAdmin){toast('Admin control tower unlocked.');return setRole('admin','v39-home')}toast('Invalid '+(which==='admin'?'admin':'cashier')+' login.')}
-  function logout(){toast('Passenger mode restored.');setRole('passenger','v39-home')}
-  function blankGuard(){const a=document.querySelector('.view.active');const text=(a?.innerText||'').trim();const hasCard=!!(a&&a.querySelector('.oj39-card,.card,.result-banner,.damage-shell,.v11-shell'));if(!a||(!hasCard&&text.length<8)){renderHome();return true}return false}
-  function clearCache(){try{if('caches'in window)caches.keys().then(keys=>Promise.all(keys.map(k=>caches.delete(k)))).then(()=>{updateCacheNote();toast('Old app cache cleared. Reload once if browser still shows older version.')});if(navigator.serviceWorker)navigator.serviceWorker.getRegistrations().then(regs=>Promise.all(regs.map(r=>r.update().catch(()=>{}))))}catch(e){toast('Cache clear failed: '+(e.message||e))}}
-  function updateCacheNote(){const el=$('oj39CacheNote');if(!el||!('caches'in window))return;if(!location.protocol.startsWith('http')){el.textContent='Cache cleaner activates after upload to GitHub Pages / HTTPS.';return}caches.keys().then(keys=>{el.textContent=keys.length?'Detected browser caches: '+keys.join(', '):'No old app cache detected.'}).catch(()=>{el.textContent='Cache status unavailable.'})}
-  function installServiceWorker(){try{if('caches'in window)caches.keys().then(keys=>keys.filter(k=>!/v39/i.test(k)).forEach(k=>caches.delete(k)));if('serviceWorker'in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(r=>r.update().catch(()=>{})).catch(()=>{})}catch(e){}}
-  function boot(){try{OWN.forEach(ensureView);if(window.showView&&window.showView!==open39)window.__oj39LegacyShow=window.showView;window.oj39Open=open39;window.oj39DoLogin=doLogin;window.oj39Logout=logout;window.oj39Repair=()=>{renderHome();toast('Screen repaired.')};window.oj39ClearCache=clearCache;window.showView=function(name){return open39(name)};try{showView=window.showView}catch(e){}window.navigate=function(name){return open39(name)};window.buildDrawerMenu=function(){return buildDrawer()};try{buildDrawerMenu=window.buildDrawerMenu}catch(e){}const stored=sessionStorage.getItem(ROLE_KEY)||localStorage.getItem(ROLE_KEY)||'passenger';document.body.classList.add('oj39-ready');setRole(stored,'v39-home');hideClutter();installServiceWorker();clearInterval(window.__oj36CleanTimer);clearInterval(window.__oj37Timer);clearInterval(window.__oj35PolishTimer);setTimeout(()=>{buildDrawer();renderHome();hideClutter()},700);setTimeout(()=>{buildDrawer();renderHome();hideClutter()},2200);clearInterval(window.__oj39Guard);window.__oj39Guard=setInterval(()=>{try{if(window.showView&&window.showView!==open39){window.__oj39LegacyShow=window.showView;window.showView=open39;try{showView=window.showView}catch(e){}}buildDrawer();hideClutter();const a=document.querySelector('.view.active');const text=(a?.innerText||'');if(!a||(!a.querySelector('.oj39-shell')&&(a.id==='view-dashboard'||text.includes('V14 Stability Pack'))))renderHome();else blankGuard()}catch(e){}},2500);console.log(VERSION+' loaded '+now())}catch(e){console.error('V39 boot error',e);toast('V39 recovery: '+(e.message||e));renderHome()}}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-})();
-</script>
-<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 <script>
 const DB_KEY = 'off_baggage_v14';
 const DEFAULT_DB = {
@@ -5712,9 +5549,6 @@ body.oj35-pax #headerLogoutBtn{display:none!important}body.oj35-pax .drawer-logo
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
 </script>
-
-
-
 
 </body>
 </html>
