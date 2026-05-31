@@ -25,7 +25,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>OceanJet Command OS V47</title>
+    <title>OceanJet Baggage Pro V42</title>
     <!-- V17 GitHub Pages / PWA package metadata -->
     <meta name="theme-color" content="#070b19">
     <meta name="application-name" content="OceanJet Baggage Pro">
@@ -207,7 +207,7 @@
 })();
 </script>
 
-    <link rel="stylesheet" href="oj47-command.css">
+<link rel="stylesheet" href="oj49-command.css?v=49.0.0">
 </head>
 <body>
 <div class="app">
@@ -5362,9 +5362,8 @@ body.v30-large-touch .card,body.v30-large-touch .v30-card{border-radius:22px!imp
     <div class="card"><div class="card-header">Smart local claim queue</div><div class="v30-table"><table><thead><tr><th>Claim</th><th>Route</th><th>Issue</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead><tbody>${t.map(c=>`<tr><td>${esc(c.claimId)}</td><td>${routeLabel(c.route)}</td><td>${esc(c.issue)}</td><td><span class="v30-chip ${priority(c.priority)}">${c.priority}</span></td><td>${statusChip(c.status)}</td><td><button class="sm" onclick="v30NextStatus('${c.claimId}')">Next</button></td></tr>`).join('')||'<tr><td colspan="6">No V30 tickets yet.</td></tr>'}</tbody></table></div></div>
     <div class="card"><div class="card-header">Evidence checklist</div><div class="v30-flow"><div class="v30-step" data-n="1"><b>Claim stub/tag photo</b><br><small>Required for identity verification.</small></div><div class="v30-step" data-n="2"><b>Full baggage view</b><br><small>Shows size, color, baggage type, and condition.</small></div><div class="v30-step" data-n="3"><b>Damage close-up</b><br><small>Shows crack, wheel, handle, wet damage, etc.</small></div><div class="v30-step" data-n="4"><b>Passenger confirmation</b><br><small>Confirm contact, claim ID, route, and status.</small></div></div></div><div class="v30-spacer"></div>`}
   window.v30CreateClaim=function(){const c={claimId:uid('OJ-V30'),createdAt:now(),issue:$('v30ClaimType').value,route:$('v30ClaimRoute').value,tag:$('v30ClaimTag').value.trim(),name:$('v30ClaimName').value.trim(),severity:$('v30ClaimSeverity').value,evidence:$('v30ClaimEvidence').value,notes:$('v30ClaimNotes').value.trim(),status:'Submitted',priority:0};c.priority=(/critical/i.test(c.severity)?88:/moderate/i.test(c.severity)?62:38)+(c.evidence.includes('No')?12:c.evidence.includes('Partial')?8:0)+(/lost|wet|broken/i.test(c.issue)?10:0);const list=tickets();list.unshift(c);save(KEYS.tickets,list);const ob=outbox();ob.unshift({id:uid('SYNC'),type:'claim',status:'pending',createdAt:now(),payload:c});save(KEYS.outbox,ob);$('v30NewClaim').innerHTML=`<div class="v30-receipt"><b>${c.claimId}</b><br>${esc(c.issue)} • ${routeLabel(c.route)}<br>Priority: ${c.priority}${qr(c.claimId)}<button class="accent block" onclick="v30PrintClaim('${c.claimId}')">Open receipt</button></div>`;audit('claim_create',c.claimId);tip('Claim packet created.');renderClaim()};
-  window.v30PrintClaim=function(id){const c=tickets().find(x=>x.claimId===id);if(!c)return;const w=window.open('','_blank');if(!w){tip('Pop-up blocked. Receipt shown in page.');return}w.document.write(`<html><head><title>${esc(id)}</title><style>body{font-family:Arial;padding:18px} .box{border:1px solid #111;padding:14px;border-radius:12px} small{color:#555}</style>    <link rel="stylesheet" href="oj47-command.css">
-</head><body><div class="box"><h2>OceanJet Claim Receipt</h2><b>${esc(c.claimId)}</b><p>${esc(c.issue)}<br>${routeLabel(c.route)}<br>Status: ${esc(c.status)}<br>Created: ${esc(c.createdAt)}</p><small>Keep this claim number for follow-up.</small></div>    <script src="oj47-command.js"></script>
-</body></html>`);w.document.close();};
+  window.v30PrintClaim=function(id){const c=tickets().find(x=>x.claimId===id);if(!c)return;const w=window.open('','_blank');if(!w){tip('Pop-up blocked. Receipt shown in page.');return}w.document.write(`<html><head><title>${esc(id)}</title><style>body{font-family:Arial;padding:18px} .box{border:1px solid #111;padding:14px;border-radius:12px} small{color:#555}</style><link rel="stylesheet" href="oj49-command.css?v=49.0.0">
+</head><body><div class="box"><h2>OceanJet Claim Receipt</h2><b>${esc(c.claimId)}</b><p>${esc(c.issue)}<br>${routeLabel(c.route)}<br>Status: ${esc(c.status)}<br>Created: ${esc(c.createdAt)}</p><small>Keep this claim number for follow-up.</small></div></body></html>`);w.document.close();};
   window.v30NextStatus=function(id){const order=['Submitted','Under Review','Need Evidence','Approved','Processing','Closed'];const list=tickets();const c=list.find(x=>x.claimId===id);if(!c)return;let i=order.indexOf(c.status);c.status=order[(i+1)%order.length];c.updatedAt=now();save(KEYS.tickets,list);audit('claim_status',id+' -> '+c.status);renderClaim();tip('Status updated.');};
   function renderSync(){const m=metrics(), cfg=load(KEYS.config,{mode:'local-only',endpoint:'',provider:'None'});ensureView('v30-sync').innerHTML=`
     <div class="card v30-shell"><div class="v30-title"><div><h2>☁️ Offline Sync Bridge</h2><div class="v30-sub">Prepares the static GitHub Pages app for future Firebase/Supabase/API sync without requiring it today. Current mode stays local-first and offline-safe.</div></div><span class="v30-chip ${navigator.onLine?'green':'red'}">${navigator.onLine?'ONLINE':'OFFLINE'}</span></div>${kpis(m)}</div>
@@ -5576,7 +5575,7 @@ body.oj35-pax #headerLogoutBtn{display:none!important}body.oj35-pax .drawer-logo
   const oldShow=window.showView;
   window.showView=function(name){ name=ALIAS[name]||name; if(!canOpen(name)){ if(String(name).includes('admin')){ activate('v35-admin-login'); renderLogin('admin'); toast35('Admin login required.'); return; } if(getRole()==='pax' && /(staff|cashier|export|data|ops)/i.test(String(name))){ activate('v35-cashier-login'); renderLogin('cashier'); toast35('Cashier or Admin login required.'); return; } activate('v35-home'); renderHome(); toast35('This tool is not available for the current role.'); return; } if(renderers[name]){ activate(name); renderers[name](); return; } const r=oldShow?oldShow.apply(this,[name]):undefined; setTimeout(polishExportLabels,80); return r; };
   try{ showView=window.showView; }catch(e){}
-  function boot(){ try{ ['v35-home','v35-cashier-login','v35-admin-login','v35-reports'].forEach(ensureView); document.body.classList.add('oj35-ready'); const stored=sessionStorage.getItem(ROLE_KEY)||'pax'; setRole(stored,'v35-home'); const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro'; const title=document.querySelector('title'); if(title) title.textContent='OceanJet Command OS V47'; setTimeout(polishExportLabels,500); ['v22SubmitClaim','v22LookupClaim'].forEach(fn=>{ if(typeof window[fn]==='function' && !window[fn].__oj35Wrapped){ const oldFn=window[fn]; window[fn]=function(){ const r=oldFn.apply(this,arguments); setTimeout(polishRoleVisibility,80); return r; }; window[fn].__oj35Wrapped=true; } }); console.log(VERSION+' loaded'); }catch(e){ console.error('V35 boot error',e); toast35('V35 recovery: '+e.message); } }
+  function boot(){ try{ ['v35-home','v35-cashier-login','v35-admin-login','v35-reports'].forEach(ensureView); document.body.classList.add('oj35-ready'); const stored=sessionStorage.getItem(ROLE_KEY)||'pax'; setRole(stored,'v35-home'); const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro'; const title=document.querySelector('title'); if(title) title.textContent='OceanJet Baggage Pro V42'; setTimeout(polishExportLabels,500); ['v22SubmitClaim','v22LookupClaim'].forEach(fn=>{ if(typeof window[fn]==='function' && !window[fn].__oj35Wrapped){ const oldFn=window[fn]; window[fn]=function(){ const r=oldFn.apply(this,arguments); setTimeout(polishRoleVisibility,80); return r; }; window[fn].__oj35Wrapped=true; } }); console.log(VERSION+' loaded'); }catch(e){ console.error('V35 boot error',e); toast35('V35 recovery: '+e.message); } }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
 </script>
@@ -5833,7 +5832,7 @@ body.oj41-ready button.primary{background:linear-gradient(135deg,var(--oj41-cyan
   }
   function enforceShell(){buildDrawer(); strictDrawer(); const badge=$('roleBadge'); if(badge) badge.textContent=roleLabel[getRole()]||'Passenger'; const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';}
   function boot(){
-    document.body.classList.add('oj41-ready'); document.title='OceanJet Command OS V47';
+    document.body.classList.add('oj41-ready'); document.title='OceanJet Baggage Pro V42';
     const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';
     patchUpdateDashboardSafe(); patchReceiptDefault(); patchARSafe(); unregisterOldWorkers();
     ['oj41-home','oj41-login','oj41-reports','oj41-advanced'].forEach(ensureView);
@@ -5920,7 +5919,7 @@ body.oj41-ready button.primary{background:linear-gradient(135deg,var(--oj41-cyan
   function patchNav(){ if(!window.__oj42LegacyShow && typeof window.showView==='function') window.__oj42LegacyShow=window.showView; window.showView=function(name){return open42(name)}; try{showView=window.showView}catch(e){} window.navigate=function(name){return open42(name)}; window.buildDrawerMenu=buildDrawer42; try{buildDrawerMenu=window.buildDrawerMenu}catch(e){} window.toggleDrawer=function(){enforceDrawer42();$('sideDrawer')?.classList.toggle('open');$('overlay')?.classList.toggle('show');$('hamburger')?.classList.toggle('open')}; window.closeDrawer=closeDrawer; }
   function watch(){const box=$('drawerMenu'); if(!box||box.__oj42Watch)return; box.__oj42Watch=true; let t=null; new MutationObserver(()=>{clearTimeout(t);t=setTimeout(enforceDrawer42,25)}).observe(box,{childList:true,subtree:true,characterData:true});}
   function keepHome42(){const a=qsa('.view.active')[0]; if(!a || a.id==='view-oj41-home' || a.id==='view-oj42-home' || a.id==='view-dashboard') renderHome42();}
-  function boot(){document.body.classList.add('oj42-ready'); document.title='OceanJet Command OS V47'; setRole(getRole()); patchNav(); buildDrawer42(); watch(); removeClutter(); renderHome42(); [250,600,1000,1800,3000,5000,8000,12000].forEach(ms=>setTimeout(enforceDrawer42,ms)); [700,1200,1700,2600,4200,6200,8500,12500].forEach(ms=>setTimeout(()=>{enforceDrawer42();keepHome42();},ms)); if(!window.__oj42Interval){window.__oj42Interval=setInterval(enforceDrawer42,1800)} console.log(VERSION+' loaded');}
+  function boot(){document.body.classList.add('oj42-ready'); document.title='OceanJet Baggage Pro V42'; setRole(getRole()); patchNav(); buildDrawer42(); watch(); removeClutter(); renderHome42(); [250,600,1000,1800,3000,5000,8000,12000].forEach(ms=>setTimeout(enforceDrawer42,ms)); [700,1200,1700,2600,4200,6200,8500,12500].forEach(ms=>setTimeout(()=>{enforceDrawer42();keepHome42();},ms)); if(!window.__oj42Interval){window.__oj42Interval=setInterval(enforceDrawer42,1800)} console.log(VERSION+' loaded');}
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
 </script>
@@ -6017,6 +6016,6 @@ body.oj43-ready .oj43-shell{border:1px solid var(--oj43-line)!important;backgrou
 })();
 </script>
 
-    <script src="oj47-command.js"></script>
+<script src="oj49-command.js?v=49.0.0" defer></script>
 </body>
 </html>
