@@ -25,7 +25,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-    <title>OceanJet Baggage Pro V35</title>
+    <title>OceanJet Baggage Pro V41</title>
     <!-- V17 GitHub Pages / PWA package metadata -->
     <meta name="theme-color" content="#070b19">
     <meta name="application-name" content="OceanJet Baggage Pro">
@@ -179,6 +179,34 @@
         /* Map */
         #liveMap{height:360px;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
     </style>
+
+<script id="oj41EarlyStoragePatch">
+(function(){
+  function makeMemoryStore(){
+    const mem={};
+    return {
+      getItem:k=>Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null,
+      setItem:(k,v)=>{mem[k]=String(v)},
+      removeItem:k=>{delete mem[k]},
+      clear:()=>{Object.keys(mem).forEach(k=>delete mem[k])},
+      key:i=>Object.keys(mem)[i]||null,
+      get length(){return Object.keys(mem).length}
+    };
+  }
+  function protect(name){
+    try{
+      const t='__oj41_'+name+'__';
+      window[name].setItem(t,t); window[name].removeItem(t);
+    }catch(e){
+      try{Object.defineProperty(window,name,{value:makeMemoryStore(), configurable:true});}catch(_){ }
+    }
+  }
+  protect('localStorage');
+  protect('sessionStorage');
+  window.__oj41StorageSafe = true;
+})();
+</script>
+
 </head>
 <body>
 <div class="app">
@@ -231,9 +259,9 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" async data-oj41-cdn="leaflet"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js" async data-oj41-cdn="tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js" async data-oj41-cdn="coco"></script>
 <script>
 const DB_KEY = 'off_baggage_v14';
 const DEFAULT_DB = {
@@ -547,7 +575,7 @@ function buildCalculator() {
     </div>
     <div class="receipt" id="receipt"></div>
   `;
-  $('calcRoute').value = 'ormoc';
+  $('calcRoute').value = 'cebu_ormoc';
   $('calcMode').addEventListener('change', () => {
     const isFragile = $('calcMode').value === 'fragile'; const grid = $('normalFields').querySelector('.grid2'); if(grid) grid.style.display = isFragile ? 'none' : 'grid';
   });
@@ -5545,7 +5573,271 @@ body.oj35-pax #headerLogoutBtn{display:none!important}body.oj35-pax .drawer-logo
   const oldShow=window.showView;
   window.showView=function(name){ name=ALIAS[name]||name; if(!canOpen(name)){ if(String(name).includes('admin')){ activate('v35-admin-login'); renderLogin('admin'); toast35('Admin login required.'); return; } if(getRole()==='pax' && /(staff|cashier|export|data|ops)/i.test(String(name))){ activate('v35-cashier-login'); renderLogin('cashier'); toast35('Cashier or Admin login required.'); return; } activate('v35-home'); renderHome(); toast35('This tool is not available for the current role.'); return; } if(renderers[name]){ activate(name); renderers[name](); return; } const r=oldShow?oldShow.apply(this,[name]):undefined; setTimeout(polishExportLabels,80); return r; };
   try{ showView=window.showView; }catch(e){}
-  function boot(){ try{ ['v35-home','v35-cashier-login','v35-admin-login','v35-reports'].forEach(ensureView); document.body.classList.add('oj35-ready'); const stored=sessionStorage.getItem(ROLE_KEY)||'pax'; setRole(stored,'v35-home'); const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro'; const title=document.querySelector('title'); if(title) title.textContent='OceanJet Baggage Pro V35'; setTimeout(polishExportLabels,500); ['v22SubmitClaim','v22LookupClaim'].forEach(fn=>{ if(typeof window[fn]==='function' && !window[fn].__oj35Wrapped){ const oldFn=window[fn]; window[fn]=function(){ const r=oldFn.apply(this,arguments); setTimeout(polishRoleVisibility,80); return r; }; window[fn].__oj35Wrapped=true; } }); console.log(VERSION+' loaded'); }catch(e){ console.error('V35 boot error',e); toast35('V35 recovery: '+e.message); } }
+  function boot(){ try{ ['v35-home','v35-cashier-login','v35-admin-login','v35-reports'].forEach(ensureView); document.body.classList.add('oj35-ready'); const stored=sessionStorage.getItem(ROLE_KEY)||'pax'; setRole(stored,'v35-home'); const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro'; const title=document.querySelector('title'); if(title) title.textContent='OceanJet Baggage Pro V41'; setTimeout(polishExportLabels,500); ['v22SubmitClaim','v22LookupClaim'].forEach(fn=>{ if(typeof window[fn]==='function' && !window[fn].__oj35Wrapped){ const oldFn=window[fn]; window[fn]=function(){ const r=oldFn.apply(this,arguments); setTimeout(polishRoleVisibility,80); return r; }; window[fn].__oj35Wrapped=true; } }); console.log(VERSION+' loaded'); }catch(e){ console.error('V35 boot error',e); toast35('V35 recovery: '+e.message); } }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
+})();
+</script>
+
+
+
+<!-- OCEANJET V41 STABLE FUTURISTIC ROLE UI
+     Built from the V35 source. Keeps official baggage calculator, passenger fare data,
+     and the V11 damage/AR evidence workflow, while removing drawer clutter and fixing
+     mobile boot/cached-service-worker blank screens.
+-->
+<style id="oj41StableRoleStyles">
+:root{--oj41-bg:#050914;--oj41-panel:rgba(9,18,38,.92);--oj41-card:rgba(255,255,255,.06);--oj41-line:rgba(100,224,255,.22);--oj41-cyan:#57f7ff;--oj41-blue:#5c8dff;--oj41-pink:#ff4fb8;--oj41-green:#7cff9b;--oj41-yellow:#ffd166;--oj41-text:#f4fbff;--oj41-muted:#9fb1ca}
+html,body{min-height:100%;height:auto!important;overflow-x:hidden!important;background:#050914!important;-webkit-text-size-adjust:100%}
+body.oj41-ready{background:radial-gradient(circle at 12% 0%,rgba(87,247,255,.16),transparent 32%),radial-gradient(circle at 90% 12%,rgba(255,79,184,.12),transparent 34%),linear-gradient(180deg,#050914,#071426 60%,#050914)!important;color:var(--oj41-text)!important}
+body.oj41-ready:before{content:"";position:fixed;inset:0;z-index:-2;background:linear-gradient(90deg,rgba(87,247,255,.035) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.9),transparent 82%)}
+body.oj41-ready .app{width:min(1180px,100%);max-width:1180px!important;min-height:100svh!important;margin:0 auto!important;overflow:visible!important;padding-bottom:34px}
+body.oj41-ready .header{position:sticky!important;top:0;z-index:8000!important;background:rgba(5,9,20,.88)!important;border-bottom:1px solid var(--oj41-line)!important;backdrop-filter:blur(18px);box-shadow:0 10px 32px rgba(0,0,0,.35)}
+body.oj41-ready .brand{font-size:1rem!important;letter-spacing:.2px;background:linear-gradient(135deg,var(--oj41-cyan),#fff,var(--oj41-pink))!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.oj41-ready .role-badge{display:inline-flex!important;align-items:center;gap:5px;border:1px solid var(--oj41-line)!important;border-radius:999px;background:rgba(87,247,255,.08)!important;color:var(--oj41-cyan)!important;padding:5px 8px!important;font-size:.62rem!important;font-weight:900!important;white-space:nowrap}
+body.oj41-role-pax .role-badge{color:var(--oj41-green)!important;border-color:rgba(124,255,155,.35)!important;background:rgba(124,255,155,.08)!important}
+body.oj41-role-cashier .role-badge{color:var(--oj41-yellow)!important;border-color:rgba(255,209,102,.35)!important;background:rgba(255,209,102,.08)!important}
+body.oj41-role-admin .role-badge{color:var(--oj41-pink)!important;border-color:rgba(255,79,184,.42)!important;background:rgba(255,79,184,.08)!important}
+body.oj41-ready .side-drawer{z-index:9000!important;background:linear-gradient(180deg,rgba(3,10,24,.98),rgba(9,22,52,.96))!important;border-right:1px solid var(--oj41-line)!important;border-radius:0 26px 26px 0!important;width:min(310px,88vw)!important;box-shadow:18px 0 50px rgba(0,0,0,.55)}
+body.oj41-ready .drawer-menu{overflow-y:auto!important;padding-right:4px;gap:7px!important;scrollbar-width:thin}
+body.oj41-ready .drawer-item{background:rgba(255,255,255,.055)!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:16px!important;padding:13px 14px!important;font-weight:850!important;font-size:.9rem!important;color:#eaffff!important;box-shadow:none!important}
+body.oj41-ready .drawer-item.active,body.oj41-ready .drawer-item:hover{border-color:rgba(87,247,255,.55)!important;background:linear-gradient(135deg,rgba(87,247,255,.12),rgba(255,79,184,.08))!important;box-shadow:0 0 20px rgba(87,247,255,.1)!important}
+body.oj41-ready .drawer-close{background:rgba(255,255,255,.08)!important;border:1px solid var(--oj41-line)!important}
+body.oj41-ready .view{padding:14px!important;min-height:calc(100svh - 80px)}
+body.oj41-ready .card{border-radius:22px!important;background:rgba(9,18,38,.82)!important;border:1px solid rgba(255,255,255,.09)!important;box-shadow:0 18px 50px rgba(0,0,0,.26)!important;backdrop-filter:blur(16px)}
+body.oj41-ready .card.glow,.oj41-shell{border-color:rgba(87,247,255,.30)!important;background:radial-gradient(circle at 0% 0%,rgba(87,247,255,.14),transparent 35%),radial-gradient(circle at 95% 20%,rgba(255,79,184,.12),transparent 36%),rgba(9,18,38,.86)!important;box-shadow:0 0 35px rgba(87,247,255,.10),0 22px 60px rgba(0,0,0,.32)!important}
+.oj41-hero{position:relative;overflow:hidden;border-radius:28px;padding:18px;border:1px solid rgba(87,247,255,.30);background:radial-gradient(circle at 18% 10%,rgba(87,247,255,.22),transparent 32%),radial-gradient(circle at 85% 20%,rgba(255,79,184,.18),transparent 34%),linear-gradient(135deg,rgba(7,16,35,.96),rgba(10,21,44,.88));box-shadow:0 0 38px rgba(87,247,255,.12)}
+.oj41-hero:after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 0 42%,rgba(255,255,255,.08) 48%,transparent 56%);transform:translateX(-120%);animation:oj41sweep 7s ease-in-out infinite;pointer-events:none}.oj41-hero>*{position:relative;z-index:1}@keyframes oj41sweep{0%,45%{transform:translateX(-120%)}75%,100%{transform:translateX(120%)}}
+.oj41-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.oj41-title h1,.oj41-title h2,.oj41-title h3{margin:0;color:#f8fdff;line-height:1.08}.oj41-sub{color:var(--oj41-muted);font-size:.82rem;line-height:1.45;margin-top:7px}.oj41-chip{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(87,247,255,.32);background:rgba(87,247,255,.08);color:var(--oj41-cyan);border-radius:999px;padding:6px 9px;font-size:.66rem;font-weight:950;letter-spacing:.35px;text-transform:uppercase;white-space:nowrap}.oj41-chip.good{color:var(--oj41-green);border-color:rgba(124,255,155,.38);background:rgba(124,255,155,.08)}.oj41-chip.warn{color:var(--oj41-yellow);border-color:rgba(255,209,102,.38);background:rgba(255,209,102,.08)}.oj41-chip.hot{color:var(--oj41-pink);border-color:rgba(255,79,184,.42);background:rgba(255,79,184,.08)}
+.oj41-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:11px}.oj41-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}.oj41-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.oj41-action{cursor:pointer;border:1px solid rgba(87,247,255,.20);background:rgba(255,255,255,.055);border-radius:20px;padding:14px;min-height:112px;display:flex;flex-direction:column;justify-content:space-between;transition:.16s;color:#fff}.oj41-action:hover{border-color:rgba(87,247,255,.55);transform:translateY(-1px);box-shadow:0 0 22px rgba(87,247,255,.11)}.oj41-action:active{transform:scale(.985)}.oj41-action i{font-style:normal;font-size:1.55rem}.oj41-action b{font-size:.94rem}.oj41-action small{color:var(--oj41-muted);font-size:.69rem;line-height:1.28}.oj41-action.good{border-color:rgba(124,255,155,.30)}.oj41-action.warn{border-color:rgba(255,209,102,.32)}.oj41-action.hot{border-color:rgba(255,79,184,.36)}
+.oj41-kpi{border:1px solid rgba(87,247,255,.17);background:rgba(255,255,255,.052);border-radius:18px;padding:12px;text-align:center;min-height:76px;display:grid;place-items:center}.oj41-kpi b{font-size:1.12rem;color:#fff}.oj41-kpi span{font-size:.65rem;color:var(--oj41-muted);text-transform:uppercase;letter-spacing:.4px}.oj41-bar{height:8px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden}.oj41-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--oj41-cyan),var(--oj41-pink));border-radius:inherit}.oj41-row{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.045);border-radius:16px;padding:10px;margin:8px 0}.oj41-row strong{display:block;color:#fff}.oj41-row small{color:var(--oj41-muted);font-size:.72rem}.oj41-login{max-width:470px;margin:14px auto}.oj41-soft{border-left:4px solid var(--oj41-cyan);background:rgba(87,247,255,.07);border-radius:15px;padding:12px;color:#e9ffff;font-size:.83rem;line-height:1.45}.oj41-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(87,247,255,.28),transparent);margin:12px 0}
+body.oj41-ready #aiFloatBtn,body.oj41-ready #chatPanel,body.oj41-ready #v6FloatTools,body.oj41-ready #v11Dock,body.oj41-ready .oj33-fab,body.oj41-ready .v30-floating-health{display:none!important}
+body.oj41-ready .v6-floating-tools,body.oj41-ready [id="v14SafeBadge"]{display:none!important}
+body.oj41-role-pax #drawerMenu .drawer-item:not([data-view="home"]):not([data-view="calculator"]):not([data-view="fares"]):not([data-view="schedules"]):not([data-view="damage"]):not([data-view="claimstatus"]):not([data-view="login-cashier"]):not([data-view="login-admin"]){display:none!important}
+body.oj41-ready #drawerMenu .drawer-item[data-view="exportcenter"],body.oj41-ready #drawerMenu .drawer-item[data-view="safemode"],body.oj41-ready #drawerMenu .drawer-item[data-view="alive"]{display:none!important}
+body.oj41-ready button,body.oj41-ready input,body.oj41-ready select,body.oj41-ready textarea{font-size:16px!important}
+body.oj41-ready button.primary{background:linear-gradient(135deg,var(--oj41-cyan),var(--oj41-blue))!important;color:#031020!important;border:0!important;font-weight:950!important}body.oj41-ready button.accent{border-color:rgba(87,247,255,.42)!important;color:var(--oj41-cyan)!important;background:rgba(87,247,255,.06)!important}
+@media(max-width:720px){body.oj41-ready .app{max-width:100%!important}.oj41-title{flex-direction:column}.oj41-grid3{grid-template-columns:1fr 1fr}.oj41-row{align-items:flex-start;flex-direction:column}.oj41-action{min-height:96px}.header-right{gap:5px!important}.toggle-dark{display:none!important}}
+@media(max-width:430px){.oj41-grid,.oj41-grid2,.oj41-grid3{grid-template-columns:1fr}.oj41-action{min-height:auto}.oj41-hero{padding:15px;border-radius:24px}body.oj41-ready .view{padding:11px!important}.clock{display:none!important}.brand{max-width:42vw!important}}
+</style>
+<script id="oj41StableRoleScript">
+(function(){
+  'use strict';
+  if(window.__oj41StableRoleUI) return;
+  window.__oj41StableRoleUI = true;
+  const VERSION='OceanJet V41 Stable Futuristic Role UI';
+  const ROLE_KEY='oj41_role';
+  const LEGACY_V35_KEY='oj_v35_active_role';
+  const $=id=>document.getElementById(id);
+  const qsa=(s,r=document)=>Array.from(r.querySelectorAll(s));
+  const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const legacyShow=window.showView;
+  const roleLabel={pax:'👤 Passenger',cashier:'💼 Cashier',admin:'👑 Admin'};
+  const safeStore={
+    get(k,d){try{return sessionStorage.getItem(k)||localStorage.getItem(k)||d}catch(e){return d}},
+    set(k,v){try{sessionStorage.setItem(k,v)}catch(e){} try{localStorage.setItem(k,v)}catch(e){}},
+    del(k){try{sessionStorage.removeItem(k)}catch(e){} try{localStorage.removeItem(k)}catch(e){}}
+  };
+  function db(){try{return window.DB||{}}catch(e){return {}}}
+  function toast41(msg){ try{ if(typeof toast==='function') return toast(msg); }catch(e){} const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600); }
+  function normalizeRole(r){r=String(r||'pax').toLowerCase(); if(r==='supervisor')return'admin'; if(!['pax','cashier','admin'].includes(r))return'pax'; return r;}
+  function getRole(){return normalizeRole(safeStore.get(ROLE_KEY,'pax'))}
+  function setRole(role,openHome=true){
+    role=normalizeRole(role); safeStore.set(ROLE_KEY,role); safeStore.set(LEGACY_V35_KEY,role);
+    try{window.currentRole = role==='admin'?'supervisor':role;}catch(e){}
+    document.body.classList.toggle('oj41-role-pax',role==='pax');
+    document.body.classList.toggle('oj41-role-cashier',role==='cashier');
+    document.body.classList.toggle('oj41-role-admin',role==='admin');
+    const badge=$('roleBadge'); if(badge) badge.textContent=roleLabel[role]||'Passenger';
+    const logout=$('headerLogoutBtn'); if(logout){logout.style.display=role==='pax'?'none':'flex'; logout.title='Return to Passenger Mode'; logout.onclick=()=>setRole('pax',true);}
+    buildDrawer(); if(openHome) open41('home');
+  }
+  function ensureView(name){
+    const id=name.startsWith('view-')?name:'view-'+name;
+    let el=$(id);
+    if(!el){ el=document.createElement('div'); el.id=id; el.className='view'; const app=document.querySelector('.app')||document.body; app.appendChild(el); }
+    return el;
+  }
+  function activateView(name){
+    const id=name.startsWith('view-')?name:'view-'+name;
+    qsa('.view').forEach(v=>v.classList.remove('active'));
+    const el=ensureView(id); el.classList.add('active');
+    qsa('.drawer-item').forEach(x=>x.classList.toggle('active',x.dataset.view===name||x.dataset.view===id.replace(/^view-/,'')));
+    closeDrawer41(); try{window.scrollTo({top:0,behavior:'smooth'})}catch(e){window.scrollTo(0,0)}
+    return el;
+  }
+  function closeDrawer41(){try{ $('sideDrawer')?.classList.remove('open'); $('overlay')?.classList.remove('show'); $('hamburger')?.classList.remove('open'); }catch(e){} }
+  const MENU={
+    pax:[['home','🏠','Passenger Home'],['calculator','🧮','Baggage Fee'],['fares','💵','Passenger Fares'],['schedules','🕐','Schedules'],['damage','📷','Damage Report'],['claimstatus','🔎','Claim Status'],['login-cashier','💼','Cashier Login'],['login-admin','🔐','Admin Login']],
+    cashier:[['home','🏠','Counter Home'],['calculator','🧮','Baggage Calc'],['damage','📷','Damage Evidence'],['ar','📹','AR Camera'],['lostbaggage','🧳','Claim Form'],['claimstatus','🔎','Claim Status'],['staffcounter','👥','Staff Counter'],['history','📋','Transactions'],['reports','📄','PDF Center'],['login-admin','🔐','Admin Login'],['logout','🚪','Passenger Mode']],
+    admin:[['home','🏠','Control Tower'],['calculator','🧮','Baggage Calc'],['fares','💵','Fare Matrix'],['schedules','🕐','Schedules'],['damage','📷','Damage Evidence'],['ar','📹','AR Camera'],['history','📋','Transactions'],['reports','📄','PDF Reports'],['admin','⚙️','Admin Panel'],['advanced','🧬','Advanced'],['logout','🚪','Passenger Mode']]
+  };
+  const allowed={
+    pax:new Set(['home','calculator','fares','schedules','damage','claimstatus','login-cashier','login-admin']),
+    cashier:new Set(['home','calculator','fares','schedules','damage','ar','lostbaggage','claimstatus','staffcounter','history','reports','login-admin','logout']),
+    admin:new Set(['home','calculator','fares','schedules','damage','ar','lostbaggage','claimstatus','staffcounter','history','reports','admin','advanced','exportcenter','sitehealth','contentmanager','v33-command','v33-staff','v33-data','v30-admin','v29-admin','v27-guardian','logout'])
+  };
+  let drawerLock=false;
+  function buildDrawer(){
+    if(drawerLock) return;
+    drawerLock=true;
+    const role=getRole(); const box=$('drawerMenu');
+    if(box){
+      box.innerHTML=(MENU[role]||MENU.pax).map(([view,ico,label])=>`<div class="drawer-item" data-view="${esc(view)}" onclick="oj41Open('${esc(view)}')"><i>${ico}</i> ${esc(label)}</div>`).join('');
+    }
+    const l=document.querySelector('.drawer-logout'); if(l){l.textContent=role==='pax'?'Passenger Mode':'🚪 Return to Passenger Mode';l.onclick=()=>setRole('pax',true);l.style.display=role==='pax'?'none':'block';}
+    const badge=$('roleBadge'); if(badge) badge.textContent=roleLabel[role]||'Passenger';
+    const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';
+    drawerLock=false;
+  }
+  function strictDrawer(){
+    const role=getRole(), box=$('drawerMenu'); if(!box) return;
+    const allowedViews=new Set((MENU[role]||MENU.pax).map(x=>x[0]));
+    qsa('.drawer-item',box).forEach(el=>{ if(!allowedViews.has(el.dataset.view)) el.remove(); });
+    const visible=qsa('.drawer-item',box).map(el=>el.dataset.view).join('|');
+    const expected=(MENU[role]||MENU.pax).map(x=>x[0]).join('|');
+    if(visible!==expected) buildDrawer();
+  }
+  function iconAction(ico,title,sub,target,type=''){
+    return `<div class="oj41-action ${type}" onclick="oj41Open('${esc(target)}')"><i>${ico}</i><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
+  }
+  function iconFn(ico,title,sub,fn,type=''){
+    return `<div class="oj41-action ${type}" onclick="${fn}"><i>${ico}</i><b>${esc(title)}</b><small>${esc(sub)}</small></div>`;
+  }
+  function stats(){
+    const d=db(); const hist=Array.isArray(d.history)?d.history:[]; let damage=0,claims=0;
+    try{const log=JSON.parse(localStorage.getItem('oj_damage_master_v11_backup')||'{}'); damage=(log.cases||[]).length;}catch(e){}
+    try{claims=(JSON.parse(localStorage.getItem('oj_v22_claims')||'[]')||[]).length}catch(e){}
+    const rev=hist.reduce((s,x)=>s+(Number(x.total)||0),0);
+    return {hist,damage,claims,rev,kg:(d.stats&&d.stats.totalKg)||0,tx:hist.length};
+  }
+  function kpis(){const s=stats();return `<div class="oj41-grid3"><div class="oj41-kpi"><b>${s.tx}</b><span>Transactions</span></div><div class="oj41-kpi"><b>${s.damage}</b><span>Damage Cases</span></div><div class="oj41-kpi"><b>₱${Math.round(s.rev).toLocaleString('en-PH')}</b><span>Revenue</span></div></div>`}
+  function renderHome(){
+    const role=getRole(); const v=activateView('oj41-home');
+    let head='', tools='', extra='';
+    if(role==='pax'){
+      head=`<div class="oj41-title"><div><h2>Passenger Portal</h2><div class="oj41-sub">No login needed. Passengers only see baggage fee checking, passenger fares, schedules, damage reporting, and claim tracking.</div></div><span class="oj41-chip good">DEFAULT MODE</span></div>`;
+      tools=iconAction('🧮','Check baggage fee','Official baggage calculator, using preserved source pricing logic.','calculator','good')+iconAction('💵','Passenger fares','View fare matrix and route pricing.','fares')+iconAction('🕐','Trip schedules','Open route departure and travel information.','schedules')+iconAction('📷','Report damage','Open baggage damage evidence scanner/report.','damage','hot')+iconAction('🔎','Track claim','Search claim status on this device.','claimstatus','warn')+iconAction('💼','Staff login','Cashier/Admin tools are hidden until login.','login-cashier');
+      extra=`<div class="card"><div class="card-header">Clean passenger experience</div><div class="oj41-soft">The site now opens as Passenger by default. No counter tools, admin panels, test modules, or experimental tabs are shown to passengers.</div></div>`;
+    }else if(role==='cashier'){
+      head=`<div class="oj41-title"><div><h2>Counter Desk</h2><div class="oj41-sub">Cashier view shows only the tools needed for baggage computation, claim intake, evidence capture, receipts, and daily PDFs.</div></div><span class="oj41-chip warn">CASHIER</span></div>`;
+      tools=iconAction('🧮','Baggage calculator','Official fee computation and receipt generation.','calculator','good')+iconAction('📷','Damage evidence','Capture and record baggage damage claims.','damage','hot')+iconAction('📹','AR camera','Open preserved AR baggage scanner.','ar')+iconAction('🧳','Claim form','Passenger lost/damaged baggage intake.','lostbaggage','warn')+iconAction('🔎','Claim status','Lookup claim progress.','claimstatus')+iconAction('📄','PDF center','Receipt, transaction, and damage reports.','reports','good');
+      extra=`<div class="card"><div class="card-header">Counter workflow</div>${['Compute baggage fee','Print/download PDF receipt','Capture damage evidence','Create/track claim','Export cashier PDF report'].map((x,i)=>`<div class="oj41-row"><div><strong>${i+1}. ${x}</strong><small>Only counter-related tools are visible.</small></div><span class="oj41-chip">OK</span></div>`).join('')}</div>`;
+    }else{
+      head=`<div class="oj41-title"><div><h2>Admin Control Tower</h2><div class="oj41-sub">Admin can access all passenger, cashier, reports, and advanced maintenance tools, but the main navigation stays clean.</div></div><span class="oj41-chip hot">FULL ACCESS</span></div>`;
+      tools=iconAction('🧮','Baggage calculator','Official source calculator preserved.','calculator','good')+iconAction('📷','Damage evidence','AR/evidence damage workflow preserved.','damage','hot')+iconAction('💵','Fare matrix','Passenger prices and route fare data.','fares')+iconAction('📋','Transactions','History and recorded receipts.','history','warn')+iconAction('📄','PDF reports','Receipt, transaction, claims, and audit PDFs.','reports','good')+iconAction('⚙️','Admin panel','Pricing, backup, and configuration tools.','admin','hot')+iconAction('🧬','Advanced modules','Older technical modules grouped away from main tabs.','advanced')+iconAction('🛟','Site health','Run app/storage/readiness checks.','sitehealth');
+      extra=`<div class="card"><div class="card-header">Professional organization rule</div><div class="oj41-soft">Passenger tools stay public, cashier tools stay at counter level, and admin has everything. Old experimental modules are not removed, but grouped under Advanced to avoid messy navigation.</div></div>`;
+    }
+    v.innerHTML=`<div class="oj41-hero">${head}<div style="margin-top:14px">${kpis()}</div></div><div class="card" style="margin-top:12px"><div class="card-header">Main workflow</div><div class="oj41-grid">${tools}</div></div>${extra}`;
+  }
+  function renderLogin(type){
+    const v=activateView('oj41-login'); const isAdmin=type==='admin';
+    v.innerHTML=`<div class="card oj41-shell oj41-login"><div class="oj41-title"><div><h2>${isAdmin?'Admin Login':'Cashier Login'}</h2><div class="oj41-sub">${isAdmin?'Unlock full control tower and all tools.':'Unlock counter tools for receipts, claims, and reports.'}</div></div><span class="oj41-chip ${isAdmin?'hot':'warn'}">LOCKED</span></div><div class="oj41-divider"></div><div class="input-group"><label>Username</label><input id="oj41User" autocomplete="username" placeholder="${isAdmin?'admin / demo':'cashier'}"></div><div class="input-group"><label>Password</label><input id="oj41Pass" type="password" autocomplete="current-password" placeholder="Password"></div><button class="primary block" onclick="oj41SubmitLogin('${type}')">Login</button><button class="accent block" style="margin-top:8px" onclick="oj41Open('home')">Back to Passenger</button><div class="oj41-soft" style="margin-top:12px">Default test access: cashier/cashier for cashier, admin/admin or demo/demo for admin.</div></div>`;
+    setTimeout(()=>$('oj41User')?.focus(),80);
+  }
+  window.oj41SubmitLogin=function(type){
+    const u=($('oj41User')?.value||'').trim(); const p=($('oj41Pass')?.value||'').trim(); const d=db();
+    const cashier=(d.creds&&d.creds.cashier)||{u:'cashier',p:'cashier'}; const sup=(d.creds&&d.creds.supervisor)||{u:'demo',p:'demo'};
+    if(type==='cashier'){
+      if((u===cashier.u&&p===cashier.p)||(u==='cashier'&&p==='cashier')){setRole('cashier',true);toast41('Cashier tools unlocked.');return;}
+      toast41('Invalid cashier login.'); return;
+    }
+    const ok=(u===sup.u&&p===sup.p)||(u==='admin'&&p==='admin')||(u==='demo'&&p==='demo')||(u==='supervisor'&&p==='supervisor');
+    if(ok){setRole('admin',true);toast41('Admin control tower unlocked.');return;} toast41('Invalid admin login.');
+  };
+  function renderReports(){
+    const role=getRole(); const v=activateView('oj41-reports'); const isAdmin=role==='admin';
+    v.innerHTML=`<div class="oj41-hero"><div class="oj41-title"><div><h2>Professional PDF Center</h2><div class="oj41-sub">Receipts and export outputs are grouped here. JSON remains technical recovery only.</div></div><span class="oj41-chip good">PDF FIRST</span></div>${kpis()}</div><div class="card" style="margin-top:12px"><div class="card-header">PDF exports</div><div class="oj41-grid">${iconFn('🧾','Receipt PDF','Export current baggage receipt as PDF.','oj35ExportReceiptPDF&&oj35ExportReceiptPDF()','good')}${iconFn('📋','Transactions PDF','Cashier daily/shift report.','oj35ExportTransactionsPDF&&oj35ExportTransactionsPDF()','warn')}${iconFn('🧳','Claims + Damage PDF','Damage and claims summary report.','oj35ExportClaimsPDF&&oj35ExportClaimsPDF()','hot')}${isAdmin?iconFn('🛡️','System Audit PDF','Admin audit and app status report.','oj35ExportSystemPDF&&oj35ExportSystemPDF()',''):''}</div></div>${isAdmin?`<div class="card"><div class="card-header">Technical recovery</div><div class="oj41-soft">Use JSON only for backup/restore, not for normal receipts or reports.</div><button class="accent block" style="margin-top:10px" onclick="oj35ExportTechnicalJSON&&oj35ExportTechnicalJSON()">Export Technical JSON Backup</button></div>`:''}`;
+  }
+  function renderAdvanced(){
+    const v=activateView('oj41-advanced');
+    v.innerHTML=`<div class="oj41-hero"><div class="oj41-title"><div><h2>Advanced Modules</h2><div class="oj41-sub">Older/admin experimental tools are grouped here so the main app stays professional and clean.</div></div><span class="oj41-chip hot">ADMIN ONLY</span></div></div><div class="card" style="margin-top:12px"><div class="card-header">Grouped technical tools</div><div class="oj41-grid">${iconAction('🧭','V33 Command','Operations command module.','v33-command')}${iconAction('🎒','Staff Workbench','Staff operations tools.','v33-staff')}${iconAction('🛡️','Data Guardian','Data and backup utilities.','v33-data')}${iconAction('🛟','Site Health','Diagnostics and readiness checks.','sitehealth')}${iconAction('📝','Content Manager','Content/settings manager.','contentmanager')}${iconAction('📤','Export Center','Original export center.','exportcenter')}</div></div>`;
+  }
+  function canOpen(target){return (allowed[getRole()]||allowed.pax).has(target)}
+  function legacyActivate(name){
+    try{
+      if(name==='damage'){activateView('damage'); if(typeof window.renderDamage==='function'){window.renderDamage('dashboard'); return;} if(typeof legacyShow==='function'){legacyShow('damage'); return;} }
+      if(name==='calculator'){activateView('calculator'); if(typeof buildCalculator==='function')buildCalculator(); return;}
+      if(name==='fares'){activateView('fares'); if(typeof buildFares==='function')buildFares(); return;}
+      if(name==='schedules'){activateView('schedules'); if(typeof buildSchedules==='function')buildSchedules(); return;}
+      if(name==='history'){activateView('history'); if(typeof buildHistory==='function')buildHistory(); return;}
+      if(name==='ar'){activateView('ar'); if(typeof buildAR==='function')buildAR(); return;}
+      if(name==='admin'){try{window.currentRole='supervisor'}catch(e){} activateView('admin'); if(typeof buildAdmin==='function')buildAdmin(); return;}
+      if(typeof legacyShow==='function'){legacyShow(name); closeDrawer41(); setTimeout(buildDrawer,50); return;}
+      activateView(name);
+    }catch(e){console.error('V41 open error',name,e); renderHome(); toast41('Recovered from '+name+' loading issue.');}
+  }
+  function open41(target){
+    target=String(target||'home'); if(target==='logout'){setRole('pax',true);toast41('Returned to Passenger Mode.');return;}
+    if(target==='login-cashier'){renderLogin('cashier');return;} if(target==='login-admin'){renderLogin('admin');return;}
+    if(!canOpen(target)){
+      if(getRole()==='pax'){renderLogin(/admin|export|site|content|v33|v30|v29|guardian|advanced/i.test(target)?'admin':'cashier');toast41('Login required for this tool.');return;}
+      renderHome();toast41('This tool is not available for the current role.');return;
+    }
+    if(target==='home'){renderHome();return;} if(target==='reports'){renderReports();return;} if(target==='advanced'){renderAdvanced();return;}
+    legacyActivate(target);
+  }
+  window.oj41Open=open41;
+  window.showView=function(name){ open41(name); };
+  try{showView=window.showView}catch(e){}
+  window.navigate=function(name){open41(name)};
+  window.logout=function(){setRole('pax',true)};
+  window.toggleDrawer=window.toggleDrawer||function(){ $('sideDrawer')?.classList.toggle('open'); $('overlay')?.classList.toggle('show'); $('hamburger')?.classList.toggle('open'); };
+  function patchUpdateDashboardSafe(){
+    try{
+      const old=window.updateDashboard;
+      if(typeof old==='function' && !old.__oj41Safe){
+        window.updateDashboard=function(){
+          try{
+            if(!$('statTrans') || !$('statRev') || !$('statKg') || !$('statTop')) return;
+            return old.apply(this,arguments);
+          }catch(e){console.warn('V41 skipped dashboard refresh because dashboard cards are not visible',e);}
+        };
+        window.updateDashboard.__oj41Safe=true;
+        try{updateDashboard=window.updateDashboard}catch(e){}
+      }
+    }catch(e){}
+  }
+  function patchReceiptDefault(){
+    const tryPatch=()=>{try{ if(typeof window.downloadReceipt==='function' && typeof window.oj35ExportReceiptPDF==='function') window.downloadReceipt=window.oj35ExportReceiptPDF; }catch(e){}};
+    tryPatch(); setTimeout(tryPatch,600);
+  }
+  function patchARSafe(){
+    const old=window.startAR;
+    if(typeof old==='function' && !old.__oj41Safe){
+      window.startAR=async function(){
+        try{
+          if(!window.cocoSsd){ console.warn('COCO model not loaded yet; starting camera with manual damage capture fallback.'); }
+          return await old.apply(this,arguments);
+        }catch(e){
+          console.warn('AR fallback',e);
+          try{
+            const video=$('arVideo')||document.querySelector('video');
+            if(video && navigator.mediaDevices && navigator.mediaDevices.getUserMedia){ video.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); await video.play(); toast41('Camera active. AI model unavailable, use manual evidence/photo capture.'); return; }
+          }catch(_){ }
+          toast41('Camera/AI model unavailable on this device or browser.');
+        }
+      };
+      window.startAR.__oj41Safe=true;
+    }
+  }
+  function unregisterOldWorkers(){
+    try{ if(navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>{try{r.update()}catch(e){}})); }catch(e){}
+    try{ if(window.caches) caches.keys().then(keys=>keys.filter(k=>!/v41/i.test(k)).forEach(k=>caches.delete(k))); }catch(e){}
+  }
+  function watchDrawer(){
+    const box=$('drawerMenu'); if(!box || box.__oj41Observed) return; box.__oj41Observed=true;
+    let t=null; new MutationObserver(()=>{clearTimeout(t); t=setTimeout(strictDrawer,40);}).observe(box,{childList:true,subtree:false});
+  }
+  function enforceShell(){buildDrawer(); strictDrawer(); const badge=$('roleBadge'); if(badge) badge.textContent=roleLabel[getRole()]||'Passenger'; const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';}
+  function boot(){
+    document.body.classList.add('oj41-ready'); document.title='OceanJet Baggage Pro V41';
+    const brand=document.querySelector('.brand'); if(brand) brand.textContent='OceanJet Baggage Pro';
+    patchUpdateDashboardSafe(); patchReceiptDefault(); patchARSafe(); unregisterOldWorkers();
+    ['oj41-home','oj41-login','oj41-reports','oj41-advanced'].forEach(ensureView);
+    const stored=normalizeRole(safeStore.get(ROLE_KEY,'pax')); setRole(stored,true); watchDrawer(); enforceShell();
+    [500,900,1400,2200,3500,5200,7500].forEach(ms=>setTimeout(()=>{enforceShell(); patchUpdateDashboardSafe(); patchReceiptDefault(); patchARSafe(); if(getRole()==='pax' && !document.querySelector('#view-oj41-home.active')) renderHome();},ms));
+    console.log(VERSION+' loaded');
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot,{once:true}); else boot();
 })();
 </script>
