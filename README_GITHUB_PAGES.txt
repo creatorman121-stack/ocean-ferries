@@ -1,3 +1,4 @@
-OceanJet V44 Command OS GitHub Pages Package
+OceanJet Baggage Pro V47 Stability + Efficiency
+
 Upload all files in this ZIP to the root of your GitHub Pages repository.
-Open index.html through HTTPS so camera permissions and PWA features work properly.
+V47 improves code stability, mobile safety, storage efficiency, evidence capture, and paired batch upload organization while preserving calculator, pricing, staff, admin, PDF, and AR/manual evidence workflows.
