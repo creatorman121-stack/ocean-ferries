@@ -1,5 +1,3 @@
-OceanJet Baggage Pro V42 Clean Home
-
-Upload all files in this ZIP to your GitHub Pages repository.
-
-V42 update: clean futuristic home dashboard, organized role-based drawer, hidden old floating clutter, passenger/cashier/admin workflow grouping.
+OceanJet V44 Command OS GitHub Pages Package
+Upload all files in this ZIP to the root of your GitHub Pages repository.
+Open index.html through HTTPS so camera permissions and PWA features work properly.
