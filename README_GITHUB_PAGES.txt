@@ -1,3 +1,4 @@
-OceanJet V44 Command OS GitHub Pages Package
-Upload all files in this ZIP to the root of your GitHub Pages repository.
-Open index.html through HTTPS so camera permissions and PWA features work properly.
+OceanJet Command OS V45
+GitHub Pages package.
+Main fixes: Smart AR image-based autofill, no default destination/Unknown AR output, real non-empty PDF exports, service-worker cache refresh, and futuristic scanner/PDF center patch.
+Upload all files to your GitHub Pages repository root.
