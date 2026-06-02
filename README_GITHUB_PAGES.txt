@@ -1,4 +1,4 @@
-OceanJet Command OS V45
-GitHub Pages package.
-Main fixes: Smart AR image-based autofill, no default destination/Unknown AR output, real non-empty PDF exports, service-worker cache refresh, and futuristic scanner/PDF center patch.
-Upload all files to your GitHub Pages repository root.
+OceanJet V51 No-Recovery Role Workspace
+Source: repaired V47 fixed package.
+Removed automatic recovery/blank-screen watcher system.
+Organized tabs by Passenger, Cashier, and Admin.
