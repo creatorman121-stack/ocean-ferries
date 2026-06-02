@@ -1,4 +1,13 @@
-OceanJet Baggage Pro V47 Stability + Efficiency
+OceanJet Baggage Pro V35 - GitHub Pages Package
 
-Upload all files in this ZIP to the root of your GitHub Pages repository.
-V47 improves code stability, mobile safety, storage efficiency, evidence capture, and paired batch upload organization while preserving calculator, pricing, staff, admin, PDF, and AR/manual evidence workflows.
+Upload all files in this ZIP to your GitHub Pages repository root.
+Open index.html through GitHub Pages.
+
+V35 updates:
+- Default visitor is Passenger mode with no login required.
+- Passenger can only see passenger/public tools.
+- Cashier Login unlocks counter tools only.
+- Admin Login unlocks all tools.
+- Receipts, transactions, claims, damage logs, and system audit reports export as professional PDF.
+- JSON backup is kept only as technical recovery backup.
+- Original baggage calculator logic and existing V33 features are preserved.
