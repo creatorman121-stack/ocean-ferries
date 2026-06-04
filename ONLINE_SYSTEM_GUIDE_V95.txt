@@ -1,0 +1,20 @@
+OceanJet PortDesk V95 Online Systems Guide
+
+What changed from V94:
+- Added v95_online_modules.js as a safe non-destructive module layer.
+- Added Passenger Hub, Fare Board, Cashier Counter Plus, Smart Alerts, Cloud Hub, and V95 Modules views.
+- Expanded online-config.json with featureFlags, modules, smartAlertRules, onlineEndpoints, and notificationTemplates.
+- Updated service worker cache to V95 and added runtime cache refresh for online assets.
+- Preserved the existing app.js baggage formula and V91/V94 data source structure.
+
+Online future workflow:
+1. Upload all files to the GitHub Pages repository root.
+2. Edit online-config.json later to change fares, advisory text, feature flags, or module registry.
+3. Hard refresh once after deployment to clear the older V94 service worker.
+4. For writable cloud systems later, connect Google Apps Script, Firebase, Supabase, or another CORS-enabled endpoint using Cloud Hub.
+
+Important:
+- Do not delete data.js because it contains route, schedule, and fare source data.
+- Do not delete online_config.js because it applies scheduled fares before app.js reads ROUTES.
+- Do not delete v95_online_modules.js because it contains the new V95 online views.
+- Baggage calculator logic was not replaced.
