@@ -1,7 +1,8 @@
 /* Ocean Fast Ferries · Baggage Pro V301 — Service Worker */
 const CACHE = 'off-v301-cache';
 const APP_VERSION = 'V301';
-const ASSETS = ['/','/index.html','/styles.css','/app.js','/data.js','/utils.js','/map.js','/manifest.json'];
+const BASE = '/ocean-ferries';
+const ASSETS = [BASE+'/', BASE+'/index.html', BASE+'/styles.css', BASE+'/app.js', BASE+'/data.js', BASE+'/utils.js', BASE+'/map.js', BASE+'/manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -44,7 +45,7 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE).then(c => c.put(e.request, cl));
         }
         return res;
-      }).catch(() => caches.match(e.request).then(r => r || caches.match('/index.html')))
+      }).catch(() => caches.match(e.request).then(r => r || caches.match(BASE+'/index.html')))
     );
   } else {
     /* Stale-while-revalidate for CDN resources — serve cache instantly, update in background */
@@ -55,7 +56,7 @@ self.addEventListener('fetch', e => {
         caches.open(CACHE).then(c => c.put(e.request, cl));
       }
       return res;
-    }).catch(() => caches.match('/index.html'));
+    }).catch(() => caches.match(BASE+'/index.html'));
     e.respondWith(
       cached.then(r => r || fetched)
     );
