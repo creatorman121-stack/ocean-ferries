@@ -2,7 +2,8 @@
    Ocean Fast Ferries · Baggage Pro V300 — Data Module
    ═══════════════════════════════════════════════════════════════ */
 
-const DB_KEY = 'off_baggage_v14';
+const DB_KEY = 'off_baggage_v15';
+const DB_VERSION = 15;
 
 const DEFAULT_DB = {
   slabs: {

@@ -2,41 +2,33 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="description" content="Ocean Fast Ferries Baggage Pro - Professional baggage fee calculator and operations tool">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5,user-scalable=yes">
+<meta name="description" content="Ocean Fast Ferries - Professional baggage fee calculator, live vessel tracking, fares, schedules and operations tool">
 <meta name="theme-color" content="#f43f5e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="manifest.json">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="manifest" href="manifest.json?v=301">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛴️</text></svg>">
-<title>Ocean Fast Ferries · Baggage Pro V300</title>
-<link rel="stylesheet" href="styles.css">
+<title>Ocean Fast Ferries · V301</title>
+<link rel="stylesheet" href="styles.css?v=301">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
 </head>
 
 <body>
 <div class="app">
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="login-overlay">
-        <div class="login-box">
-            <h2 style="text-align:center">⛴️ Ocean Fast Ferries</h2>
-            <p style="text-align:center;font-size:.7rem;color:var(--text3);margin-bottom:16px">Baggage Pro V300</p>
-            <div class="input-group"><label>Username</label><input id="loginUser" placeholder="Enter username" autofocus></div>
-            <div class="input-group"><label>Password</label><input type="password" id="loginPass" placeholder="Enter password"></div>
-            <button class="primary block" onclick="attemptLogin()">Login</button>
-        </div>
-    </div>
-
     <!-- Header -->
     <header class="header">
         <div class="hamburger" id="hamburger" onclick="toggleDrawer()"><div></div><div></div><div></div></div>
-        <div class="brand">Ocean Fast Ferries</div>
+        <div class="brand" onclick="navigate('dashboard')">Ocean Fast Ferries</div>
         <div class="header-right">
-            <div class="toggle-dark" id="darkLightToggle" onclick="toggleTheme()">💡</div>
             <div class="header-clock" id="headerClock" onclick="showShiftTimer()" title="Tap for Shift Timer"></div>
+            <div class="toggle-dark" id="darkLightToggle" onclick="toggleTheme()">💡</div>
             <span class="role-badge" id="roleBadge"></span>
-            <div class="logout-btn" id="headerLogoutBtn" onclick="logout()" title="Logout">⏻</div>
+            <div class="notif-btn" id="notifBtn" onclick="toggleNotifCenter()" title="Notifications">🔔<span class="notif-dot" id="notifDot"></span></div>
         </div>
     </header>
 
@@ -44,8 +36,16 @@
     <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
     <nav class="side-drawer" id="sideDrawer">
         <div class="drawer-close" onclick="closeDrawer()">✕</div>
+        <div class="drawer-brand">⛴️ Ocean Fast Ferries</div>
         <div class="drawer-menu" id="drawerMenu"></div>
-        <button class="drawer-logout" onclick="logout()">🚪 Logout</button>
+        <div class="drawer-footer">
+            <button class="drawer-admin-btn" id="drawerAdminBtn" onclick="showAdminLogin()">
+                🔐 Admin Mode
+            </button>
+            <button class="drawer-logout" id="drawerLogoutBtn" onclick="logout()" style="display:none">
+                🚪 Logout
+            </button>
+        </div>
     </nav>
 
     <!-- Views -->
@@ -59,7 +59,26 @@
     <div id="view-map" class="view"></div>
 </div>
 
-<!-- V300: Unified Action Menu (replaces all FABs) -->
+<!-- Bottom Navigation (mobile-first) -->
+<nav class="bottom-nav" id="bottomNav">
+    <div class="bnav-item active" data-view="dashboard" onclick="navigate('dashboard')">
+        <span class="bnav-icon">🏠</span><span class="bnav-label">Home</span>
+    </div>
+    <div class="bnav-item" data-view="calculator" onclick="navigate('calculator')">
+        <span class="bnav-icon">🧮</span><span class="bnav-label">Calc</span>
+    </div>
+    <div class="bnav-item" data-view="map" onclick="navigate('map')">
+        <span class="bnav-icon">🗺️</span><span class="bnav-label">Map</span>
+    </div>
+    <div class="bnav-item" data-view="schedules" onclick="navigate('schedules')">
+        <span class="bnav-icon">🕐</span><span class="bnav-label">Trips</span>
+    </div>
+    <div class="bnav-item" data-view="fares" onclick="navigate('fares')">
+        <span class="bnav-icon">💰</span><span class="bnav-label">Fares</span>
+    </div>
+</nav>
+
+<!-- Floating Action Button -->
 <button class="action-menu-fab" id="actionMenuFab" onclick="toggleActionMenu()">✚</button>
 <div class="action-menu-items" id="actionMenuItems">
     <div class="action-item" onclick="showTally();toggleActionMenu()">
@@ -80,7 +99,32 @@
     </div>
     <div class="action-item" onclick="exportHistoryCSV();toggleActionMenu()">
         <span class="action-item-label">Export</span>
-        <button class="action-item-btn export">📥</button>
+        <button class="action-item-btn export">📤</button>
+    </div>
+</div>
+
+<!-- Admin Login Modal -->
+<div class="admin-modal" id="adminModal" style="display:none">
+    <div class="admin-modal-box">
+        <h3>🔐 Admin Login</h3>
+        <p style="font-size:.75rem;color:var(--text3);margin-bottom:14px">Enter credentials to unlock admin tools</p>
+        <div class="input-group"><label>Username</label><input id="adminUser" placeholder="Enter username" autofocus></div>
+        <div class="input-group"><label>Password</label><input type="password" id="adminPass" placeholder="Enter password" onkeypress="if(event.key==='Enter')attemptAdminLogin()"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="primary block" onclick="attemptAdminLogin()">Login</button>
+            <button class="block" onclick="closeAdminModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<!-- Notification Center -->
+<div class="notif-center" id="notifCenter" style="display:none">
+    <div class="notif-header">
+        <span>🔔 Notifications</span>
+        <span style="cursor:pointer" onclick="toggleNotifCenter()">✕</span>
+    </div>
+    <div class="notif-body" id="notifBody">
+        <div class="notif-empty">No notifications yet</div>
     </div>
 </div>
 
@@ -97,7 +141,7 @@
     </div>
 </div>
 
-<!-- Status Badges (minimal, no clutter) -->
+<!-- Status Badges -->
 <div class="offline-badge" id="offlineBadge">📡 Offline</div>
 <div class="alert-badge" id="alertBadge"><span class="alert-dot"></span><span class="alert-text"></span></div>
 
@@ -107,16 +151,35 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <!-- App Modules -->
-<script src="data.js"></script>
-<script src="utils.js"></script>
-<script src="app.js"></script>
-<script src="map.js"></script>
+<script src="data.js?v=301"></script>
+<script src="utils.js?v=301"></script>
+<script src="app.js?v=301"></script>
+<script src="map.js?v=301"></script>
 
 <!-- Register Real Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').then(() => console.log('SW registered from file')).catch(e => console.log('SW registration failed:', e));
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SW_UPDATED') {
+      console.log('New SW version activated:', event.data.version);
+      window.location.reload(true);
+    }
+  });
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    console.log('SW registered from file');
+    reg.update();
+  }).catch(e => console.log('SW registration failed:', e));
 }
+(function purgeOldStorage() {
+  const oldKeys = ['off_baggage_v14','off_baggage_v13','off_baggage_v12','off_baggage_v11','off_baggage_v10'];
+  oldKeys.forEach(k => { if (localStorage.getItem(k)) localStorage.removeItem(k); });
+})();
 </script>
 </body>
 </html>

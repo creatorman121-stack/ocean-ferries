@@ -1,17 +1,33 @@
-/* ═══════════════════════════════════════════════════════════════
-   Ocean Fast Ferries · Baggage Pro V300 — Application Logic
-   ═══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════════
+   Ocean Fast Ferries · V301 — Application Logic
+   ══════════════════════════════════════════════════════════════════ */
 
 // ── Database Init ──
 let DB = JSON.parse(localStorage.getItem(DB_KEY)) || {};
 window.DB = DB;
 
-(function mergeDefaults() {
-  for (let key of Object.keys(DEFAULT_DB)) {
-    if (!(key in DB)) { DB[key] = DEFAULT_DB[key]; continue; }
-    if (typeof DEFAULT_DB[key] === 'object' && !Array.isArray(DEFAULT_DB[key])) {
-      for (let subKey of Object.keys(DEFAULT_DB[key])) {
-        if (!(subKey in DB[key])) DB[key][subKey] = DEFAULT_DB[key][subKey];
+(function migrateDB() {
+  const storedVersion = DB._version || 0;
+  const needsFullReset = storedVersion < DB_VERSION;
+  if (needsFullReset) {
+    const preserved = {};
+    if (DB.comps && DB.comps.length) preserved.comps = DB.comps;
+    if (DB.stats) preserved.stats = DB.stats;
+    if (DB.aiSettings) preserved.aiSettings = DB.aiSettings;
+    if (DB.darkMode !== undefined) preserved.darkMode = DB.darkMode;
+    if (DB.creds) preserved.creds = DB.creds;
+    DB = JSON.parse(JSON.stringify(DEFAULT_DB));
+    DB._version = DB_VERSION;
+    for (const key of Object.keys(preserved)) DB[key] = preserved[key];
+    applyConnectingPassengerFares();
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  } else {
+    for (let key of Object.keys(DEFAULT_DB)) {
+      if (!(key in DB)) { DB[key] = JSON.parse(JSON.stringify(DEFAULT_DB[key])); continue; }
+      if (typeof DEFAULT_DB[key] === 'object' && !Array.isArray(DEFAULT_DB[key])) {
+        for (let subKey of Object.keys(DEFAULT_DB[key])) {
+          if (!(subKey in DB[key])) DB[key][subKey] = JSON.parse(JSON.stringify(DEFAULT_DB[key][subKey]));
+        }
       }
     }
   }
@@ -25,27 +41,76 @@ applyConnectingPassengerFares();
 let currentRole = null, chatContext = [];
 let lastReceiptText = '', lastTransaction = null;
 let actionMenuOpen = false;
+let notifications = [];
 
-// ── Auth ──
-function attemptLogin() {
-  const u = $('loginUser').value.trim(), p = $('loginPass').value.trim();
+// ── Notification System ──
+function addNotif(text, type='info') {
+  notifications.unshift({ text, type, time: new Date().toISOString(), id: Date.now() });
+  if (notifications.length > 50) notifications.pop();
+  const dot = $('notifDot'); if(dot) dot.classList.add('show');
+  renderNotifCenter();
+}
+function renderNotifCenter() {
+  const body = $('notifBody'); if(!body) return;
+  if (!notifications.length) { body.innerHTML = '<div class="notif-empty">No notifications yet</div>'; return; }
+  body.innerHTML = notifications.slice(0,20).map(n =>
+    `<div class="notif-item"><div>${n.text}</div><div class="notif-time">${new Date(n.time).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</div></div>`
+  ).join('');
+}
+function toggleNotifCenter() {
+  const c = $('notifCenter');
+  if(!c) return;
+  const showing = c.style.display !== 'none';
+  c.style.display = showing ? 'none' : 'block';
+  if(!showing) { const dot=$('notifDot'); if(dot) dot.classList.remove('show'); }
+}
+document.addEventListener('click', e => {
+  const c = $('notifCenter');
+  const b = $('notifBtn');
+  if(c && c.style.display !== 'none' && !c.contains(e.target) && !b?.contains(e.target)) c.style.display = 'none';
+});
+
+// ── Auth (No login wall — admin mode is optional) ──
+function attemptAdminLogin() {
+  const u = $('adminUser').value.trim(), p = $('adminPass').value.trim();
   if (!u || !p) return toast('Please enter credentials');
-  const cashier = DB.creds.cashier, supervisor = DB.creds.supervisor;
-  if (u === cashier.u && p === cashier.p) { currentRole = 'cashier'; postLogin(); }
-  else if (u === supervisor.u && p === supervisor.p) { currentRole = 'supervisor'; postLogin(); }
+  const supervisor = DB.creds.supervisor;
+  const cashier = DB.creds.cashier;
+  if (u === supervisor.u && p === supervisor.p) { currentRole = 'supervisor'; postAdminLogin(); }
+  else if (u === cashier.u && p === cashier.p) { currentRole = 'cashier'; postAdminLogin(); }
   else toast('Invalid username or password');
+}
+function postAdminLogin() {
+  closeAdminModal();
+  $('roleBadge').textContent = currentRole === 'supervisor' ? '👑 Supervisor' : '💼 Cashier';
+  const btn = $('drawerAdminBtn');
+  if(btn) { btn.textContent = '✅ ' + (currentRole === 'supervisor' ? 'Supervisor' : 'Cashier'); btn.classList.add('active-admin'); }
+  const logoutBtn = $('drawerLogoutBtn');
+  if(logoutBtn) logoutBtn.style.display = 'block';
+  addNotif(`Logged in as ${currentRole}`, 'success');
+  toast(`Admin mode: ${currentRole}`);
+  buildDrawerMenu();
 }
 function logout() {
   currentRole = null; chatContext = [];
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  $('loginOverlay').style.display = 'flex';
   $('roleBadge').textContent = '';
-  $('drawerMenu').innerHTML = '';
+  const btn = $('drawerAdminBtn');
+  if(btn) { btn.textContent = '🔐 Admin Mode'; btn.classList.remove('active-admin'); }
+  const logoutBtn = $('drawerLogoutBtn');
+  if(logoutBtn) logoutBtn.style.display = 'none';
+  addNotif('Logged out of admin mode', 'info');
+  toast('Logged out');
+  buildDrawerMenu();
+  if(document.querySelector('#view-admin.active')) navigate('dashboard');
 }
-function postLogin() {
-  $('loginOverlay').style.display = 'none';
-  $('roleBadge').textContent = currentRole === 'supervisor' ? '👑 Supervisor' : '💼 Cashier';
-  applyTheme(); buildDrawerMenu(); showView('dashboard');
+function showAdminLogin() {
+  if (currentRole) { logout(); return; }
+  const m = $('adminModal');
+  if(m) { m.style.display = 'flex'; setTimeout(()=>{const i=$('adminUser');if(i)i.focus();},100); }
+}
+function closeAdminModal() {
+  const m = $('adminModal');
+  if(m) m.style.display = 'none';
 }
 
 // ── Theme ──
@@ -64,9 +129,9 @@ function buildDrawerMenu() {
     { view:'map',        icon:'🗺️', label:'Live Map' },
     { view:'fares',      icon:'💰', label:'Fares & Slabs' },
     { view:'schedules',  icon:'🕐', label:'Schedules' },
-    { view:'history',    icon:'📋', label:'History' },
-    { view:'admin',      icon:'🔒', label:'Admin' }
+    { view:'history',    icon:'📋', label:'History' }
   ];
+  if (currentRole) items.push({ view:'admin', icon:'🔐', label:'Admin Panel' });
   $('drawerMenu').innerHTML = items.map(i =>
     `<div class="drawer-item" data-view="${i.view}" onclick="navigate('${i.view}')"><i>${i.icon}</i> ${i.label}</div>`
   ).join('');
@@ -90,6 +155,10 @@ function showView(name) {
   document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
   const item = document.querySelector(`.drawer-item[data-view="${name}"]`);
   if (item) item.classList.add('active');
+  // Bottom nav active state
+  document.querySelectorAll('.bnav-item').forEach(el => el.classList.remove('active'));
+  const bnav = document.querySelector(`.bnav-item[data-view="${name}"]`);
+  if (bnav) bnav.classList.add('active');
   switch(name) {
     case 'dashboard':  buildDashboard(); break;
     case 'calculator': buildCalculator(); break;
@@ -101,6 +170,7 @@ function showView(name) {
     case 'map':        buildMap(); break;
   }
   updateDrawerBadges();
+  window.scrollTo(0,0);
 }
 
 // ── Unified Action Menu ──
@@ -111,7 +181,6 @@ function toggleActionMenu() {
   if (!fab || !items) return;
   fab.classList.toggle('open', actionMenuOpen);
   items.classList.toggle('show', actionMenuOpen);
-  // Close when clicking outside
   if (actionMenuOpen) {
     setTimeout(() => {
       document.addEventListener('click', closeActionMenuOutside, { once: true });
@@ -125,7 +194,7 @@ function closeActionMenuOutside(e) {
   $('actionMenuItems')?.classList.remove('show');
 }
 
-// ── Dashboard (V300: cleaned up, no duplicate sections) ──
+// ── Dashboard (V301: futuristic with live ticker, neon stats) ──
 function buildDashboard() {
   const s = DB.stats;
   const today = new Date().toISOString().slice(0,10);
@@ -133,49 +202,91 @@ function buildDashboard() {
   const todayRev = todayTx.reduce((a,c) => a + Number(c.total||0), 0);
   const noteText = loadNote();
   const noteHtml = noteText
-    ? `<div class="note-text">${noteText.replace(/</g,'&lt;')}</div>`
+    ? `<div class="note-text">${noteText.replace(/</g,'<')}</div>`
     : `<div class="note-placeholder">Tap Edit to add shift notes, supervisor info, vessel changes...</div>`;
 
-  // Route activity
   const counts = {};
   todayTx.filter(c => c.route).forEach(c => { counts[c.route] = (counts[c.route]||0)+1; });
   const routeKeys = Object.keys(counts).sort((a,b) => counts[b]-counts[a]);
   const maxCount = routeKeys.length ? counts[routeKeys[0]] : 1;
   const routeHtml = routeKeys.length
     ? routeKeys.map(k => `<div class="route-row"><span class="route-name">${routeName(k)}</span><div class="route-bar"><div class="route-fill" style="width:${Math.round(counts[k]/maxCount*100)}%"></div></div><span class="route-count">${counts[k]}</span></div>`).join('')
-    : '<div style="font-size:.75rem;color:#8fa3c8;padding:4px 0">No transactions yet today.</div>';
+    : '<div style="font-size:.72rem;color:#8fa3c8;padding:4px 0">No transactions yet today.</div>';
+
+  // Live ticker content
+  const nextDeps = getNextDepartures(3);
+  const tickerText = nextDeps.length
+    ? nextDeps.map(d => `⛴️ ${d.vessel} → ${d.route} departs ${d.dep}`).join('  ●  ')
+    : 'No upcoming departures today  ●  Ocean Fast Ferries — Safe. Fast. Reliable.';
 
   $('view-dashboard').innerHTML = `
+    <div class="live-ticker">
+      <div class="live-ticker-label"><span class="live-dot"></span> LIVE</div>
+      <div class="ticker-content">${tickerText}</div>
+    </div>
     <div class="grid2">
-      <div class="stat-box"><div class="stat-value" id="statTrans">${s.transactions}</div><div class="stat-label">Transactions</div></div>
-      <div class="stat-box"><div class="stat-value" id="statRev">₱${todayRev.toFixed(0)}</div><div class="stat-label">Today Revenue</div></div>
-      <div class="stat-box"><div class="stat-value" id="statKg">${s.totalKg}kg</div><div class="stat-label">Total Weight</div></div>
-      <div class="stat-box"><div class="stat-value" id="statTop">${s.topRoute || '--'}</div><div class="stat-label">Top Route</div></div>
+      <div class="neon-stat">
+        <div class="neon-val" id="statTrans">${s.transactions}</div>
+        <div class="neon-label">Transactions</div>
+      </div>
+      <div class="neon-stat">
+        <div class="neon-val" id="statRev">₱${todayRev.toFixed(0)}</div>
+        <div class="neon-label">Today Revenue</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="neon-stat">
+        <div class="neon-val" id="statKg">${s.totalKg}kg</div>
+        <div class="neon-label">Total Weight</div>
+      </div>
+      <div class="neon-stat">
+        <div class="neon-val" id="statTop">${s.topRoute || '--'}</div>
+        <div class="neon-label">Top Route</div>
+      </div>
     </div>
     <div class="note-card" id="noteCard">
       <div class="note-head"><span class="note-title">📌 Shift Notes</span><span class="note-edit" onclick="editNote()">✎ Edit</span></div>
       ${noteHtml}
     </div>
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:10px">
       <div class="card-header">📊 Today's Route Activity</div>${routeHtml}
     </div>
-    <div class="card" style="margin-top:12px">
+    <div class="card" style="margin-top:10px">
       <div class="card-header">📈 Revenue Pulse</div>
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><span style="font-size:1.4rem;font-weight:900;color:#22d3ee">${fmtPHP(todayRev)}</span><span style="font-size:.7rem;color:var(--text3);margin-left:6px">today</span></div>
-        <div style="font-size:.72rem;color:var(--text2)">${todayTx.length} transactions</div>
+        <div><span style="font-size:1.3rem;font-weight:900;color:#22d3ee">${fmtPHP(todayRev)}</span><span style="font-size:.65rem;color:var(--text3);margin-left:6px">today</span></div>
+        <div style="font-size:.68rem;color:var(--text2)">${todayTx.length} transactions</div>
       </div>
-      <div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;margin-top:8px;overflow:hidden">
+      <div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px;margin-top:6px;overflow:hidden">
         <div style="height:100%;width:${Math.min(100,todayRev/50000*100)}%;background:linear-gradient(90deg,#22d3ee,#a855f7);border-radius:3px"></div>
       </div>
     </div>
-    <button class="accent block" style="margin-top:8px" onclick="navigate('analytics')">📊 View Full Analytics →</button>
-    <button class="accent block" style="margin-top:6px" onclick="navigate('calculator')">🧮 Open Calculator →</button>
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+      <button class="accent block" style="flex:1;min-width:140px" onclick="navigate('analytics')">📊 Analytics →</button>
+      <button class="accent block" style="flex:1;min-width:140px" onclick="navigate('calculator')">🧮 Calculator →</button>
+    </div>
   `;
 }
 
+// Helper: get next departures for live ticker
+function getNextDepartures(count) {
+  const now = new Date(); const nowMin = now.getHours()*60+now.getMinutes();
+  const deps = [];
+  Object.keys(DB.schedules||{}).forEach(k => {
+    (DB.schedules[k].trips||[]).forEach(t => {
+      const m = String(t.dep).trim().match(/(\d{1,2}):(\d{2})\s*([AP]M)?/i);
+      if(!m) return;
+      let h=+m[1],mn=+m[2],ap=(m[3]||'').toUpperCase();
+      if(ap==='PM'&&h!==12)h+=12; if(ap==='AM'&&h===12)h=0;
+      const depMin=h*60+mn; let eta=depMin-nowMin; if(eta<-45)eta+=1440;
+      if(eta>0) deps.push({ vessel:t.vessel, route:routeName(k), dep:t.dep, eta, key:k });
+    });
+  });
+  return deps.sort((a,b)=>a.eta-b.eta).slice(0,count);
+}
+
 // ── Shift Notes ──
-const NOTE_KEY = 'off_note_v300';
+const NOTE_KEY = 'off_note_v301';
 function loadNote() { try { return localStorage.getItem(NOTE_KEY) || ''; } catch(e) { return ''; } }
 function saveNote(t) { try { localStorage.setItem(NOTE_KEY, t); } catch(e) {} }
 function editNote() {
@@ -226,7 +337,7 @@ function buildCalculator() {
       <div class="result-banner"><div class="result-total" id="totalDisplay"></div><div id="perPaxDisplay" style="color:var(--text2);font-weight:600"></div></div>
       <div class="steps" id="stepsDisplay"></div>
       <div class="change-box" id="changeBox" style="display:none">
-        <div style="font-weight:700;font-size:.78rem;margin-bottom:6px">💵 Change Calculator</div>
+        <div style="font-weight:700;font-size:.75rem;margin-bottom:5px">💵 Change Calculator</div>
         <div class="change-row"><input type="number" id="tenderedInput" placeholder="Amount tendered (₱)" oninput="calcChange()"></div>
         <div class="change-result" id="changeResult"></div>
       </div>
@@ -342,17 +453,16 @@ function compute(override = null) {
   if (shareBtn && navigator.share) shareBtn.style.display = 'block';
   else if (shareBtn) shareBtn.style.display = 'none';
 
-  // Receipt with real QR code placeholder (filled by QRCode.js)
   const receiptHtml = `
     <div style="text-align:center;font-weight:bold;font-size:1rem;margin-bottom:6px">⛴️ Ocean Fast Ferries</div>
-    <div style="text-align:center;font-size:.7rem;margin-bottom:8px">BAGGAGE FEE RECEIPT</div>
+    <div style="text-align:center;font-size:.68rem;margin-bottom:8px">BAGGAGE FEE RECEIPT</div>
     <div>Route: <b>${routeName(route)}</b></div><div>Mode: <b>${mode.toUpperCase()}</b></div>
     <div>${mode==='normal'?`Class: <b>${cls}</b> | Pax: <b>${pax}</b>`:`Fragile Cargo`}</div>
     <div>Weight: <b>${weight} kg</b></div>
     <hr style="margin:6px 0">${steps.map(s => `<div>${s}</div>`).join('')}<hr style="margin:6px 0">
     <div style="text-align:center;font-weight:bold;font-size:1.1rem">💰 TOTAL: ${fmtPHP(total)}</div>
     <div class="receipt-qr" id="receiptQR"></div>
-    <div style="font-size:.65rem;margin-top:6px;text-align:center">${new Date().toLocaleString()}</div>`;
+    <div style="font-size:.62rem;margin-top:6px;text-align:center">${new Date().toLocaleString()}</div>`;
   $('receipt').innerHTML = receiptHtml + `
     <div class="receipt-actions">
       <button class="primary-pdf" onclick="downloadReceiptPDF()">📄 Download PDF</button>
@@ -361,7 +471,6 @@ function compute(override = null) {
     </div>`;
   $('receipt').style.display = 'block';
 
-  // Generate real QR code if library loaded
   generateReceiptQR(total, route);
 
   lastReceiptText = ['Ocean Fast Ferries','BAGGAGE FEE RECEIPT','Route: '+routeName(route),'Mode: '+mode.toUpperCase(),
@@ -376,9 +485,9 @@ function compute(override = null) {
     let top='',max=0;
     for (let [k,v] of Object.entries(DB.stats.routeCounts)) if(v>max){max=v;top=k;}
     DB.stats.topRoute = top;
-    // V300 FIX: Only store in comps (no more duplicate DB.history)
     DB.comps.push({...lastTransaction});
     saveDB(); buildDashboard(); updateDrawerBadges();
+    addNotif(`Transaction: ${routeName(route)} — ${fmtPHP(total)}`, 'transaction');
   }
 }
 
@@ -429,6 +538,7 @@ function undoLastTransaction() {
     DB.stats.totalKg = Math.max(0, DB.stats.totalKg - t.weight);
     if (DB.stats.routeCounts[t.route]) DB.stats.routeCounts[t.route] = Math.max(0, DB.stats.routeCounts[t.route]-1);
     saveDB(); buildDashboard(); updateDrawerBadges();
+    addNotif('Transaction undone', 'warning');
     toast('Last transaction undone');
   }
   lastTransaction = null;
@@ -533,12 +643,12 @@ function filterSchedules() {
   }).join('');
 }
 
-// ── History View (V300: with search + CSV export, no duplicate data) ──
+// ── History View (V301: with search + CSV export) ──
 function buildHistory() {
   $('view-history').innerHTML = `
     <div class="card">
       <div class="card-header" style="justify-content:space-between"><span>📋 Transaction History</span>
-        <button class="sm" onclick="exportHistoryCSV()">📥 CSV</button>
+        <button class="sm" onclick="exportHistoryCSV()">📤 CSV</button>
       </div>
       <div class="search-bar"><input id="histSearch" placeholder="Search route, date, amount..." oninput="filterHistory()"></div>
       <div id="histList"></div>
@@ -574,37 +684,46 @@ function clearHistory() {
   toast('History cleared');
 }
 
-// ── Analytics View (V300: NEW — Chart.js powered) ──
+// ── Analytics View (V301: futuristic charts) ──
 function buildAnalytics() {
   const today = new Date().toISOString().slice(0,10);
   const txs = DB.comps || [];
+  const todayRev = txs.filter(c=>c.time&&c.time.slice(0,10)===today).reduce((a,c)=>a+Number(c.total||0),0);
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate()-7);
+  const weekRev = txs.filter(c=>c.time&&new Date(c.time)>=weekAgo).reduce((a,c)=>a+Number(c.total||0),0);
 
   $('view-analytics').innerHTML = `
     <div class="card glow">
       <div class="card-header">📊 Revenue Analytics</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="neon-stat" style="flex:1;min-width:120px"><div class="neon-val" style="color:var(--neon-cyan)">${fmtPHP(todayRev)}</div><div class="neon-label">Today</div></div>
+        <div class="neon-stat" style="flex:1;min-width:120px"><div class="neon-val" style="color:var(--neon-green)">${fmtPHP(weekRev)}</div><div class="neon-label">This Week</div></div>
+        <div class="neon-stat" style="flex:1;min-width:120px"><div class="neon-val" style="color:var(--neon-purple)">${txs.length}</div><div class="neon-label">Total Txns</div></div>
+      </div>
       <div class="chart-card"><canvas id="chartRevenue"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-header">🥧 Route Breakdown</div>
+      <div class="card-header">🧩 Route Breakdown</div>
       <div class="chart-card"><canvas id="chartRoutes"></canvas></div>
     </div>
     <div class="card">
       <div class="card-header">⚖️ Weight Distribution</div>
       <div class="chart-card"><canvas id="chartWeight"></canvas></div>
     </div>
-    <button class="accent block" onclick="exportAnalyticsCSV()">📥 Export Analytics CSV</button>
-  `;
-
-  // Wait for DOM to render canvases
+    <button class="accent block" onclick="exportAnalyticsCSV()">📤 Export Analytics CSV</button>`;
   setTimeout(() => renderAnalyticsCharts(txs, today), 100);
 }
 
 function renderAnalyticsCharts(txs, today) {
   if (typeof Chart === 'undefined') {
-    const fallback = '<div style="color:var(--text3);font-size:.85rem;padding:20px;text-align:center">Charts require internet connection (Chart.js CDN). Data is still tracked locally.</div>';
+    const fallback = '<div style="color:var(--text3);font-size:.85rem;padding:20px;text-align:center">Charts require internet (Chart.js CDN). Data tracked locally.</div>';
     const c1=$('chartRevenue'); if(c1) c1.parentNode.innerHTML = fallback;
     return;
   }
+  const neonColors = {
+    cyan: '#22d3ee', purple: '#a855f7', green: '#22c55e', pink: '#f43f5e',
+    orange: '#fb923c', yellow: '#eab308', blue: '#3b82f6', magenta: '#ec4899'
+  };
 
   // Revenue by day (last 7 days)
   const days = [];
@@ -621,29 +740,26 @@ function renderAnalyticsCharts(txs, today) {
     scales: { x: { ticks: { color: '#5d6380' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#5d6380' }, grid: { color: 'rgba(255,255,255,0.05)' } } }
   };
 
-  // Revenue Line Chart
   const ctx1 = $('chartRevenue')?.getContext('2d');
   if (ctx1) new Chart(ctx1, {
     type: 'line',
-    data: { labels: dayLabels, datasets: [{ label: 'Revenue (₱)', data: revByDay, borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.15)', fill: true, tension: 0.3 }] },
+    data: { labels: dayLabels, datasets: [{ label: 'Revenue (₱)', data: revByDay, borderColor: neonColors.cyan, backgroundColor: 'rgba(34,211,238,0.15)', fill: true, tension: 0.3, pointBackgroundColor: neonColors.cyan, pointBorderColor: '#fff', pointRadius: 4 }] },
     options: { ...commonOpts, plugins: { ...commonOpts.plugins, legend: { display: false } } }
   });
 
-  // Route Pie Chart
   const routeCounts = {};
   txs.forEach(c => { if(c.route) routeCounts[c.route] = (routeCounts[c.route]||0) + 1; });
   const routeLabels = Object.keys(routeCounts).map(k => routeName(k));
   const routeData = Object.values(routeCounts);
-  const pieColors = ['#f43f5e','#fb923c','#22d3ee','#a855f7','#22c55e','#eab308','#3b82f6','#ec4899'];
+  const pieColors = [neonColors.pink, neonColors.orange, neonColors.cyan, neonColors.purple, neonColors.green, neonColors.yellow, neonColors.blue, neonColors.magenta];
 
   const ctx2 = $('chartRoutes')?.getContext('2d');
   if (ctx2) new Chart(ctx2, {
     type: 'doughnut',
-    data: { labels: routeLabels, datasets: [{ data: routeData, backgroundColor: pieColors.slice(0,routeLabels.length) }] },
+    data: { labels: routeLabels, datasets: [{ data: routeData, backgroundColor: pieColors.slice(0,routeLabels.length), borderColor: '#0c1023', borderWidth: 2 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9da4c0', font: { size: 10 }, padding: 12 } } } }
   });
 
-  // Weight Distribution Bar Chart
   const weightBuckets = { '0-10kg':0, '11-20kg':0, '21-40kg':0, '41+kg':0 };
   txs.forEach(c => {
     const w = Number(c.weight||0);
@@ -656,7 +772,7 @@ function renderAnalyticsCharts(txs, today) {
   const ctx3 = $('chartWeight')?.getContext('2d');
   if (ctx3) new Chart(ctx3, {
     type: 'bar',
-    data: { labels: Object.keys(weightBuckets), datasets: [{ label: 'Transactions', data: Object.values(weightBuckets), backgroundColor: ['#22c55e','#eab308','#fb923c','#ef4444'] }] },
+    data: { labels: Object.keys(weightBuckets), datasets: [{ label: 'Transactions', data: Object.values(weightBuckets), backgroundColor: [neonColors.green, neonColors.yellow, neonColors.orange, neonColors.pink], borderRadius: 6 }] },
     options: { ...commonOpts, plugins: { ...commonOpts.plugins, legend: { display: false } } }
   });
 }
@@ -672,77 +788,207 @@ function exportAnalyticsCSV() {
   toast('Analytics CSV exported ✓');
 }
 
-// ── Admin View ──
+// ── Admin View (V301: Enhanced with futuristic real-time features) ──
 function buildAdmin() {
+  if (!currentRole) {
+    $('view-admin').innerHTML = `<div class="card glow" style="text-align:center;padding:40px 20px">
+      <div style="font-size:3rem;margin-bottom:12px">🔐</div>
+      <div style="font-size:1.1rem;font-weight:700;margin-bottom:8px">Admin Mode Required</div>
+      <div style="color:var(--text3);font-size:.85rem;margin-bottom:20px">Login to access admin tools and real-time monitoring</div>
+      <button class="primary" onclick="showAdminLogin()">🔓 Enter Admin Mode</button>
+    </div>`;
+    return;
+  }
+  const txs = DB.comps||[];
+  const today = new Date().toISOString().slice(0,10);
+  const todayTxs = txs.filter(c=>c.time&&c.time.slice(0,10)===today);
+  const todayRev = todayTxs.reduce((a,c)=>a+Number(c.total||0),0);
+  const todayKg = todayTxs.reduce((a,c)=>a+Number(c.weight||0),0);
+  const dbSize = Math.round(JSON.stringify(DB).length/1024);
+  const isSuper = currentRole==='supervisor';
+
+  // System health calculations
+  const storageUsed = Math.round(JSON.stringify(localStorage).length/1024);
+  const storageMax = 5120; // 5MB typical limit
+  const storagePct = Math.min(100, Math.round(storageUsed/storageMax*100));
+  const uptime = loadShiftState()?.startTime ? hms(Math.floor((Date.now()-loadShiftState().startTime)/1000)) : 'Not started';
+
+  // Route performance data
+  const routePerf = {};
+  CEBU_BAGGAGE_ROUTES.forEach(k => {
+    const rTxs = todayTxs.filter(c=>c.route===k);
+    routePerf[k] = { count: rTxs.length, rev: rTxs.reduce((a,c)=>a+Number(c.total||0),0), kg: rTxs.reduce((a,c)=>a+Number(c.weight||0),0) };
+  });
+
+  // Revenue projection (simple: avg daily * 30)
+  const allTimeDays = txs.length ? Math.max(1, Math.ceil((Date.now() - new Date(txs[0]?.time||Date.now()).getTime()) / 86400000)) : 1;
+  const avgDaily = txs.reduce((a,c)=>a+Number(c.total||0),0) / allTimeDays;
+  const monthProj = Math.round(avgDaily * 30);
+
   $('view-admin').innerHTML = `
-    <div class="card"><div class="card-header">🔒 Admin Panel</div>
-      <div style="font-size:.8rem;color:var(--text2);margin-bottom:12px">Role: <b>${currentRole}</b></div>
-      ${currentRole==='supervisor'?`
-        <div class="input-group"><label>Change Cashier Username</label><input id="adminCashierU" value="${DB.creds.cashier.u}"></div>
-        <div class="input-group"><label>Change Cashier Password</label><input id="adminCashierP" value="${DB.creds.cashier.p}"></div>
-        <button class="primary block" onclick="saveCreds()">Save Credentials</button>
-        <div style="margin-top:16px"></div>
-        <div class="input-group"><label>AI API Key (Gemini)</label><input id="adminApiKey" value="${DB.aiSettings.apiKey||''}" placeholder="Enter Gemini API key"></div>
-        <button class="accent block" onclick="saveApiKey()">Save API Key</button>
-      `:`<div style="color:var(--text3);font-size:.82rem">Supervisor access required to modify settings.</div>`}
+    <div class="card glow">
+      <div class="card-header" style="justify-content:space-between"><span>🛡️ Admin Command Center</span>
+        <button class="sm danger" onclick="logout()">Logout</button>
+      </div>
+      <div style="font-size:.8rem;color:var(--text2);margin-bottom:12px">Role: <b style="color:var(--neon-cyan)">${currentRole}</b></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <div class="neon-stat" style="flex:1;min-width:100px"><div class="neon-val" style="color:var(--neon-cyan)">${todayTxs.length}</div><div class="neon-label">Today Txns</div></div>
+        <div class="neon-stat" style="flex:1;min-width:100px"><div class="neon-val" style="color:var(--neon-green)">${fmtPHP(todayRev)}</div><div class="neon-label">Today Rev</div></div>
+        <div class="neon-stat" style="flex:1;min-width:100px"><div class="neon-val" style="color:var(--neon-purple)">${todayKg}kg</div><div class="neon-label">Today Weight</div></div>
+      </div>
     </div>
-    <div class="card"><div class="card-header">💾 Data Management</div>
+
+    <!-- System Health Monitor -->
+    <div class="card">
+      <div class="card-header">💓 System Health</div>
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px"><span>Storage</span><span style="color:var(--neon-cyan)">${storageUsed}KB / ${storageMax}KB</span></div>
+        <div style="background:var(--border);border-radius:4px;height:8px;overflow:hidden">
+          <div style="background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));height:100%;width:${storagePct}%;border-radius:4px;transition:width .5s"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.75rem">
+        <div style="color:var(--text2)">DB Size: <b>${dbSize}KB</b></div>
+        <div style="color:var(--text2)">Total Txns: <b>${txs.length}</b></div>
+        <div style="color:var(--text2)">Shift: <b style="color:var(--neon-green)">${uptime}</b></div>
+        <div style="color:var(--text2)">Online: <b style="color:${navigator.onLine?'var(--neon-green)':'var(--neon-pink)'}">${navigator.onLine?'Yes':'Offline'}</b></div>
+        <div style="color:var(--text2)">Version: <b>V301</b></div>
+        <div style="color:var(--text2)">SW: <b style="color:var(--neon-cyan)">${'serviceWorker' in navigator?'Active':'N/A'}</b></div>
+      </div>
+    </div>
+
+    <!-- Revenue Projections -->
+    <div class="card">
+      <div class="card-header">📈 Revenue Projections</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="neon-stat" style="flex:1;min-width:100px"><div class="neon-val" style="color:var(--neon-green);font-size:1rem">${fmtPHP(avgDaily)}</div><div class="neon-label">Avg Daily</div></div>
+        <div class="neon-stat" style="flex:1;min-width:100px"><div class="neon-val" style="color:var(--neon-cyan);font-size:1rem">${fmtPHP(monthProj)}</div><div class="neon-label">Month Proj</div></div>
+      </div>
+    </div>
+
+    <!-- Route Performance Heatmap -->
+    <div class="card">
+      <div class="card-header">🗺️ Route Performance (Today)</div>
+      <div id="routeHeatmap" style="display:flex;flex-direction:column;gap:4px">
+        ${CEBU_BAGGAGE_ROUTES.map(k => {
+          const rp = routePerf[k]||{count:0,rev:0,kg:0};
+          const intensity = Math.min(100, rp.count * 20);
+          const bg = intensity > 60 ? 'rgba(34,211,238,0.3)' : intensity > 30 ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)';
+          return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:${bg};font-size:.78rem;transition:all .3s">
+            <span style="font-weight:600;color:var(--accent);min-width:110px">${routeName(k)}</span>
+            <span style="color:var(--neon-cyan);min-width:30px;text-align:right">${rp.count}</span>
+            <span style="color:var(--text3);flex:1">${fmtPHP(rp.rev)}</span>
+            <span style="color:var(--neon-purple)">${rp.kg}kg</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    ${isSuper ? `
+    <!-- Credential Management -->
+    <div class="card">
+      <div class="card-header">🔑 Credential Management</div>
+      <div class="input-group"><label>Cashier Username</label><input id="adminCashierU" value="${DB.creds.cashier.u}"></div>
+      <div class="input-group"><label>Cashier Password</label><input id="adminCashierP" value="${DB.creds.cashier.p}" type="password"></div>
+      <button class="primary block" onclick="saveCreds()">Save Credentials</button>
+    </div>
+
+    <!-- AI Settings -->
+    <div class="card">
+      <div class="card-header">🤖 AI Configuration</div>
+      <div class="input-group"><label>Gemini API Key</label><input id="adminApiKey" value="${DB.aiSettings.apiKey||''}" placeholder="Enter Gemini API key"></div>
+      <div class="input-group"><label>Model</label>
+        <select id="adminAiModel">
+          <option value="gemini-2.0-flash" ${(DB.aiSettings.model||'gemini-2.0-flash')==='gemini-2.0-flash'?'selected':''}>Gemini 2.0 Flash</option>
+          <option value="gemini-1.5-flash" ${DB.aiSettings.model==='gemini-1.5-flash'?'selected':''}>Gemini 1.5 Flash</option>
+          <option value="gemini-1.5-pro" ${DB.aiSettings.model==='gemini-1.5-pro'?'selected':''}>Gemini 1.5 Pro</option>
+        </select>
+      </div>
+      <button class="accent block" onclick="saveApiKey()">Save AI Settings</button>
+    </div>
+    ` : '<div style="color:var(--text3);font-size:.82rem;padding:8px">Supervisor access required for settings.</div>'}
+
+    <!-- Bulk Operations -->
+    <div class="card">
+      <div class="card-header">⚡ Bulk Operations</div>
       <div class="grid2">
         <button class="accent block" onclick="exportDatabase()">📤 Export JSON</button>
         <button class="accent block" onclick="importDatabasePrompt()">📥 Import JSON</button>
       </div>
-      <div style="margin-top:8px;font-size:.72rem;color:var(--text3)">Transactions: ${DB.comps?.length||0} | DB Size: ${Math.round(JSON.stringify(DB).length/1024)}KB</div>
+      ${isSuper ? `
+      <div style="margin-top:8px">
+        <button class="accent block" onclick="purgeOldData()">🧹 Purge Old Data (>30d)</button>
+        <button class="accent block" style="margin-top:6px" onclick="forceCacheClear()">🔄 Force Cache Clear</button>
+      </div>` : ''}
+      <div style="margin-top:8px;font-size:.72rem;color:var(--text3)">Transactions: ${txs.length} | DB: ${dbSize}KB | Storage: ${storagePct}%</div>
+    </div>
+
+    <!-- Audit Log -->
+    <div class="card">
+      <div class="card-header">📜 Audit Log</div>
+      <div id="auditLog" style="max-height:200px;overflow-y:auto;font-size:.72rem;color:var(--text2)">
+        ${buildAuditLog(txs)}
+      </div>
     </div>`;
 }
+
 function saveCreds() {
   const u=$('adminCashierU')?.value?.trim(), p=$('adminCashierP')?.value?.trim();
   if(u) DB.creds.cashier.u=u; if(p) DB.creds.cashier.p=p;
-  saveDB(); toast('Credentials saved ✓');
+  saveDB(); addNotif('Credentials updated','success'); toast('Credentials saved ✓');
 }
 function saveApiKey() {
   const k=$('adminApiKey')?.value?.trim();
-  DB.aiSettings.apiKey=k||''; saveDB(); toast('API key saved ✓');
+  const m=$('adminAiModel')?.value||'gemini-2.0-flash';
+  DB.aiSettings.apiKey=k||''; DB.aiSettings.model=m;
+  saveDB(); addNotif('AI settings updated','success'); toast('API key saved ✓');
 }
 function exportDatabase() {
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`ocean_db_backup_${receiptFileStamp()}.json`;a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1200);toast('Database exported ✓');
+  setTimeout(()=>URL.revokeObjectURL(a.href),1200);addNotif('Database exported','info');toast('Database exported ✓');
 }
 function importDatabasePrompt() {
   const input=document.createElement('input');input.type='file';input.accept='.json';
   input.onchange=e=>{
     const f=e.target.files[0];if(!f)return;
     const r=new FileReader();r.onload=ev=>{
-      try{const data=JSON.parse(ev.target.result);Object.assign(DB,data);saveDB();toast('Database imported ✓');buildAdmin();}
+      try{const data=JSON.parse(ev.target.result);Object.assign(DB,data);saveDB();addNotif('Database imported','success');toast('Database imported ✓');buildAdmin();}
       catch(err){toast('Invalid JSON file');}
     };r.readAsText(f);
   };input.click();
 }
-
-// ── Drawer Badges ──
-function updateDrawerBadges() {
-  const txs = DB.comps || [];
-  const today = new Date().toISOString().slice(0,10);
-  const todayTx = txs.filter(c => c.time && c.time.slice(0,10) === today);
-  const histItem = document.querySelector('.drawer-item[data-view="history"]');
-  if (histItem) {
-    let badge = histItem.querySelector('.txn-badge');
-    if (!badge && todayTx.length > 0) {
-      badge = document.createElement('span'); badge.className = 'txn-badge';
-      histItem.style.position = 'relative'; histItem.appendChild(badge);
-    }
-    if (badge) {
-      badge.textContent = todayTx.length > 99 ? '99+' : todayTx.length;
-      badge.classList.toggle('show', todayTx.length > 0);
-    }
+function purgeOldData() {
+  if(!confirm('Delete transactions older than 30 days?')) return;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-30);
+  const before = DB.comps.length;
+  DB.comps = (DB.comps||[]).filter(c => new Date(c.time) >= cutoff);
+  const removed = before - DB.comps.length;
+  saveDB(); addNotif(`Purged ${removed} old records`,'warning'); toast(`Removed ${removed} old records`); buildAdmin();
+}
+function forceCacheClear() {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({type:'FORCE_CLEAR_CACHE'});
   }
+  localStorage.removeItem('off_baggage_v14'); localStorage.removeItem('off_baggage_v13');
+  addNotif('Cache clear requested','warning'); toast('Cache clear sent ✓');
+}
+function buildAuditLog(txs) {
+  const recent = (txs||[]).slice(-20).reverse();
+  if (!recent.length) return '<div style="color:var(--text3)">No recent activity</div>';
+  return recent.map(c => `<div style="padding:3px 0;border-bottom:1px solid var(--border)">
+    <span style="color:var(--neon-cyan)">${(c.time||'').slice(0,16).replace('T',' ')}</span>
+    <span style="color:var(--accent)">${routeName(c.route)}</span>
+    <span style="color:var(--neon-green)">${fmtPHP(c.total)}</span>
+    <span style="color:var(--text3)">${c.mode} ${c.weight}kg</span>
+  </div>`).join('');
 }
 
-// ── Tally Counter ──
-const TALLY_KEY = 'off_tally_v300';
+// ── Tally Counter (V301) ──
+const TALLY_KEY = 'off_tally_v301';
 let tallyCount = 0;
 try { const s = localStorage.getItem(TALLY_KEY); if(s) tallyCount = JSON.parse(s).count||0; } catch(e) {}
-function saveTally() { try { localStorage.setItem(TALLY_KEY, JSON.stringify({count:tallyCount})); } catch(e) {} }
+function saveTally() { try { localStorage.setItem(TALLY_KEY, JSON.stringify({count:tallyCount,date:new Date().toISOString().slice(0,10)})); } catch(e) {} }
 function showTally() {
   if ($('tallyOverlay')) return;
   const today = new Date().toLocaleDateString('en-PH',{weekday:'short',month:'short',day:'numeric'});
@@ -752,13 +998,14 @@ function showTally() {
     <div class="tally-btns"><button class="tally-btn minus" id="tallyMinus">−</button><button class="tally-btn plus" id="tallyPlus">+</button></div>
     <div class="tally-actions"><button onclick="closeTally()">← Close</button><button class="tally-reset" onclick="resetTally()">Reset to 0</button></div>`;
   document.body.appendChild(ov);
-  $('tallyPlus').onclick = () => { tallyCount++; saveTally(); const n=$('tallyNum'); if(n){n.textContent=String(tallyCount).padStart(3,'0');n.classList.add('bump');setTimeout(()=>n.classList.remove('bump'),80);} };
-  $('tallyMinus').onclick = () => { if(tallyCount<=0)return; tallyCount--; saveTally(); const n=$('tallyNum'); if(n)n.textContent=String(tallyCount).padStart(3,'0'); };
+  $('tallyPlus').onclick = () => { tallyCount++; saveTally(); const n=$('tallyNum'); if(n){n.textContent=String(tallyCount).padStart(3,'0');n.classList.add('bump');setTimeout(()=>n.classList.remove('bump'),80);} haptic([8]); };
+  $('tallyMinus').onclick = () => { if(tallyCount<=0)return; tallyCount--; saveTally(); const n=$('tallyNum'); if(n)n.textContent=String(tallyCount).padStart(3,'0'); haptic([5]); };
+  ov.addEventListener('click', e => { if(e.target===ov) ov.remove(); });
 }
 function closeTally() { const o=$('tallyOverlay'); if(o)o.remove(); }
-function resetTally() { tallyCount=0; saveTally(); const n=$('tallyNum'); if(n)n.textContent='000'; toast('Tally reset'); }
+function resetTally() { tallyCount=0; saveTally(); const n=$('tallyNum'); if(n)n.textContent='000'; toast('Tally reset'); haptic([15]); }
 
-// ── Fare Lookup Panel ──
+// ── Fare Lookup Panel (V301) ──
 function openFarePanel() {
   if ($('farePanel')) return;
   const ov = document.createElement('div'); ov.className='fare-panel'; ov.id='farePanel';
@@ -784,8 +1031,8 @@ function goCalcFromFare(route) {
   setTimeout(()=>{if($('calcRoute'))$('calcRoute').value=route;updateAllowBar();toast('Route set: '+routeName(route));},120);
 }
 
-// ── Shift Timer ──
-const SHIFT_KEY = 'off_shift_v300';
+// ── Shift Timer (V301) ──
+const SHIFT_KEY = 'off_shift_v301';
 function loadShiftState() { try { const s=localStorage.getItem(SHIFT_KEY); return s?JSON.parse(s):null; } catch(e) { return null; } }
 function saveShiftState(state) { try { localStorage.setItem(SHIFT_KEY,JSON.stringify(state)); } catch(e) {} }
 function getShiftElapsed() { const state=loadShiftState(); if(!state||!state.startTime) return 0; return Math.floor((Date.now()-state.startTime)/1000); }
@@ -805,14 +1052,14 @@ function showShiftTimer() {
     <div class="timer-actions">${running
       ?'<button class="timer-stop" onclick="stopShift()">⏹ End Shift</button>'
       :'<button class="timer-start" onclick="startShift()">▶ Start Shift</button>'}
-      <button class="timer-close" onclick="this.closest(\'.timer-overlay\').remove()">← Close</button></div></div>`;
+      <button class="timer-close" onclick="this.closest('.timer-overlay').remove()">← Close</button></div></div>`;
   ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
   document.body.appendChild(ov);
 }
-window.startShift=()=>{saveShiftState({startTime:Date.now()});const o=$('timerOverlay');if(o)o.remove();toast('▶ Shift started!');};
-window.stopShift=()=>{const elapsed=getShiftElapsed();saveShiftState(null);const o=$('timerOverlay');if(o)o.remove();toast('⏹ Shift ended — '+hms(elapsed)+' on duty');};
+window.startShift=()=>{saveShiftState({startTime:Date.now()});const o=$('timerOverlay');if(o)o.remove();addNotif('Shift started','success');toast('▶ Shift started!');haptic([15]);};
+window.stopShift=()=>{const elapsed=getShiftElapsed();saveShiftState(null);const o=$('timerOverlay');if(o)o.remove();addNotif('Shift ended: '+hms(elapsed),'warning');toast('⏹ Shift ended — '+hms(elapsed)+' on duty');haptic([20]);};
 
-// ── Header Clock ──
+// ── Header Clock (V301) ──
 function tickHeaderClock() {
   const clk=$('headerClock'); if(!clk) return;
   const d=new Date(); const h=d.getHours(),m=d.getMinutes(),s=d.getSeconds();
@@ -828,18 +1075,17 @@ function tickHeaderClock() {
   const disp=$('shiftHMS');
   if(disp&&state&&state.startTime){disp.textContent=hms(Math.floor((Date.now()-state.startTime)/1000));}
 }
-setInterval(tickHeaderClock,1000); tickHeaderClock();
 
-// ── Offline Status ──
+// ── Offline Status (V301) ──
 function updateOfflineStatus() {
   const badge=$('offlineBadge'); if(!badge) return;
   badge.classList.toggle('show', !navigator.onLine);
+  if(!navigator.onLine) addNotif('You are offline — data saved locally','warning');
 }
-window.addEventListener('online', updateOfflineStatus);
+window.addEventListener('online', () => { updateOfflineStatus(); addNotif('Back online!','success'); });
 window.addEventListener('offline', updateOfflineStatus);
-setTimeout(updateOfflineStatus, 1000);
 
-// ── Departure Alerts ──
+// ── Departure Alerts (V301) ──
 let _alertDismissed=false, _lastAlertKey='';
 function checkDepartures() {
   const now=new Date(); const nowMin=now.getHours()*60+now.getMinutes();
@@ -859,39 +1105,46 @@ function checkDepartures() {
   const top=alerts.sort((a,b)=>a.eta-b.eta)[0];
   const key=top.vessel+top.dep;
   if(key===_lastAlertKey&&_alertDismissed)return;
-  if(key!==_lastAlertKey){_alertDismissed=false;_lastAlertKey=key;}
+  if(key!==_lastAlertKey){_alertDismissed=false;_lastAlertKey=key;addNotif(`⚠️ ${top.vessel} departs in ${top.eta}m`,'warning');}
   badge.querySelector('.alert-text').textContent=`⚠️ ${top.vessel} → ${top.route} departs in ${top.eta}m`;
   badge.classList.add('show');
 }
-$('alertBadge').onclick=()=>{_alertDismissed=true;$('alertBadge').classList.remove('show');};
-setInterval(checkDepartures,60000); setTimeout(checkDepartures,2000);
 
-// ── Dynamic Background ──
+// ── Dynamic Background (V301) ──
 function updateDynamicBackground() {
   const h=new Date().getHours(); let bg='#070b19';
   if(h>=5&&h<8) bg='#1a0f2e'; else if(h>=8&&h<17) bg='#0a1f3a'; else if(h>=17&&h<19) bg='#2e1a0f';
   document.documentElement.style.setProperty('--bg-base',bg);
 }
-updateDynamicBackground(); setInterval(updateDynamicBackground,60000);
 
-// ── Touch Swipe for Drawer ──
+// ── Touch Swipe for Drawer (V301) ──
 let touchStartX=0;
-document.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX});
-document.addEventListener('touchend',e=>{const diff=e.changedTouches[0].clientX-touchStartX;if(touchStartX<50&&diff>80)toggleDrawer();if(touchStartX>200&&diff<-80)closeDrawer()});
+document.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX},{passive:true});
+document.addEventListener('touchend',e=>{
+  const diff=e.changedTouches[0].clientX-touchStartX;
+  if(touchStartX<50&&diff>80)toggleDrawer();
+  if(touchStartX>200&&diff<-80)closeDrawer();
+},{passive:true});
 
-// ── Keyboard Shortcuts ──
+// ── Keyboard Shortcuts (V301) ──
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.shiftKey&&e.key==='E') exportDatabase();
   if(e.ctrlKey&&e.shiftKey&&e.key==='I'){e.preventDefault();importDatabasePrompt();}
+  if(e.ctrlKey&&e.shiftKey&&e.key==='A'){e.preventDefault();showAdminLogin();}
+  if(e.ctrlKey&&e.shiftKey&&e.key==='T'){e.preventDefault();showTally();}
+  if(e.ctrlKey&&e.shiftKey&&e.key==='S'){e.preventDefault();showShiftTimer();}
 });
 
-// ── Haptic on Buttons ──
+// ── Haptic Feedback (V301) ──
+function haptic(pattern=[10]) {
+  if(navigator.vibrate) navigator.vibrate(pattern);
+}
 document.addEventListener('click',e=>{
-  const btn=e.target.closest('button,.drawer-item,.tally-btn,.hamburger');
+  const btn=e.target.closest('button,.drawer-item,.tally-btn,.hamburger,.bnav-item');
   if(btn) haptic(btn.classList.contains('primary')?[18]:[8]);
 },{passive:true});
 
-// ── AI Chat ──
+// ── AI Chat (V301: Gemini-powered) ──
 function toggleChat() {
   const panel=$('chatPanel');
   if(!panel)return;
@@ -903,7 +1156,7 @@ function sendAIChat() {
   const msg=input.value.trim(); if(!msg)return;
   input.value='';
   const body=$('chatBody');
-  body.innerHTML+=`<div class="chat-bubble user">${msg.replace(/</g,'&lt;')}</div>`;
+  body.innerHTML+=`<div class="chat-bubble user">${msg.replace(/</g,'<')}</div>`;
   body.innerHTML+=`<div class="loading-dot" id="chatLoading"><span></span><span></span><span></span></div>`;
   body.scrollTop=body.scrollHeight;
 
@@ -926,7 +1179,7 @@ function sendAIChat() {
   }).then(r=>r.json()).then(data=>{
     const ld=$('chatLoading');if(ld)ld.remove();
     const text=data?.candidates?.[0]?.content?.parts?.[0]?.text||'Sorry, I could not generate a response.';
-    body.innerHTML+=`<div class="chat-bubble bot">${text.replace(/</g,'&lt;')}</div>`;
+    body.innerHTML+=`<div class="chat-bubble bot">${text.replace(/</g,'<')}</div>`;
     chatContext.push({role:'model',parts:[{text}]});
     body.scrollTop=body.scrollHeight;
   }).catch(err=>{
@@ -936,7 +1189,7 @@ function sendAIChat() {
   });
 }
 
-// ── Voice Commands ──
+// ── Voice Commands (V301) ──
 function startVoice() {
   if(!('webkitSpeechRecognition' in window)&&!('SpeechRecognition' in window)) return toast('Voice not supported');
   const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -954,31 +1207,65 @@ function startVoice() {
     if($('chatInput')){$('chatInput').value=transcript;sendAIChat();}
   };
   recognition.onerror=()=>toast('Voice recognition failed');
-  recognition.start(); toast('🎤 Listening...');
+  recognition.start(); toast('🎤 Listening...'); haptic([10]);
 }
 
-// ── Service Worker ──
-if('serviceWorker' in navigator){
-  const SW_CODE=`
-    const CACHE='off-v300b-cache';
-    const ASSETS=['/','/index.html','/styles.css','/app.js','/data.js','/utils.js','/map.js','/manifest.json'];
-    self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{}));self.skipWaiting();});
-    self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
-    self.addEventListener('fetch',e=>{
-      if(e.request.method!=='GET')return;
-      const url=new URL(e.request.url);
-      const isAppAsset=url.pathname.endsWith('.js')||url.pathname.endsWith('.css')||url.pathname.endsWith('.html')||url.pathname==='/';
-      if(isAppAsset){
-        e.respondWith(fetch(e.request).then(res=>{
-          if(res.ok){const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}
-          return res;
-        }).catch(()=>caches.match(e.request).then(r=>r||caches.match('/index.html'))));
-      }else{
-        e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-          if(res.ok){const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return res;
-        }).catch(()=>caches.match('/index.html'))));
-      }
-    });`;
-  const blob=new Blob([SW_CODE],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).then(()=>console.log('SW registered')).catch(()=>{});
+// ── Update Drawer Badges (V301) ──
+function updateDrawerBadges() {
+  const txs = DB.comps || [];
+  const today = new Date().toISOString().slice(0,10);
+  const todayTx = txs.filter(c => c.time && c.time.slice(0,10) === today);
+  const histItem = document.querySelector('.drawer-item[data-view="history"]');
+  if (histItem) {
+    let badge = histItem.querySelector('.txn-badge');
+    if (!badge && todayTx.length > 0) {
+      badge = document.createElement('span'); badge.className = 'txn-badge';
+      histItem.style.position = 'relative'; histItem.appendChild(badge);
+    }
+    if (badge) {
+      badge.textContent = todayTx.length > 99 ? '99+' : todayTx.length;
+      badge.classList.toggle('show', todayTx.length > 0);
+    }
+  }
 }
+
+// ── Initialization (V301) ──
+function initApp() {
+  // Apply theme
+  applyTheme();
+
+  // Build drawer menu
+  buildDrawerMenu();
+
+  // Show dashboard (no login wall!)
+  showView('dashboard');
+
+  // Start header clock
+  setInterval(tickHeaderClock, 1000);
+  tickHeaderClock();
+
+  // Offline status
+  setTimeout(updateOfflineStatus, 1000);
+
+  // Departure alerts
+  setInterval(checkDepartures, 60000);
+  setTimeout(checkDepartures, 2000);
+
+  // Dynamic background
+  updateDynamicBackground();
+  setInterval(updateDynamicBackground, 60000);
+
+  // Update drawer badges
+  updateDrawerBadges();
+
+  // Notification bell
+  renderNotifCenter();
+
+  // Welcome notification
+  addNotif('Welcome to Ocean Fast Ferries V301!', 'info');
+
+  console.log('🚢 Ocean Fast Ferries V301 initialized');
+}
+
+// Start the app
+initApp();
