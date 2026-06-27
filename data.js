@@ -202,7 +202,6 @@ const DEFAULT_DB = {
   stats: { transactions:0, revenue:0, totalKg:0, topRoute:'', routeCounts:{} },
   comps: [],
   creds: { cashier:{u:'cashier',p:'cashier'}, supervisor:{u:'demo',p:'demo'} },
-  history: [],
   darkMode: false,
   aiSettings: { apiKey:'', useAI:true, model:'auto', timeoutMs:20000, lastStatus:'Not tested yet', lastModel:'', availableModels:[] }
 };

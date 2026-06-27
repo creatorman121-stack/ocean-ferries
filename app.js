@@ -17,7 +17,6 @@ window.DB = DB;
   }
 })();
 if (!DB.aiSettings) DB.aiSettings = { apiKey:'', useAI:true, model:'auto', timeoutMs:20000, lastStatus:'Not tested yet' };
-if (!DB.history) DB.history = [];
 if (DB.darkMode === undefined) DB.darkMode = false;
 
 const saveDB = () => localStorage.setItem(DB_KEY, JSON.stringify(DB));
@@ -272,9 +271,11 @@ function swapRoute() {
   const parts = v.split('_');
   if (parts.length < 2) { toast('No reverse route'); return; }
   const rev = parts[1] + '_' + parts[0];
+  let found = false;
   for (let i = 0; i < routeSel.options.length; i++) {
-    if (routeSel.options[i].value === rev) { routeSel.value = rev; break; }
+    if (routeSel.options[i].value === rev) { routeSel.value = rev; found = true; break; }
   }
+  if (!found) { toast('Reverse route not available'); return; }
   toast('Route swapped ⇄');
   if ($('resultCard')?.style.display !== 'none') compute();
   updateAllowBar();
@@ -305,6 +306,7 @@ function getCalcParams() {
 function compute(override = null) {
   const p = override || getCalcParams();
   const {route, mode, cls, pax, weight, rounding} = p;
+  if (!DB.slabs[route]?.[mode]) { toast('Slab rates not found for this route/mode'); return; }
   const free = mode === 'normal' ? DB.freeAllowance[cls] : 0;
   const freeTotal = free * pax;
   let excess = Math.max(0, weight - freeTotal);
@@ -374,7 +376,7 @@ function compute(override = null) {
     DB.stats.topRoute = top;
     // V300 FIX: Only store in comps (no more duplicate DB.history)
     DB.comps.push({...lastTransaction});
-    saveDB(); updateDashboard(); updateDrawerBadges();
+    saveDB(); buildDashboard(); updateDrawerBadges();
   }
 }
 
@@ -424,7 +426,7 @@ function undoLastTransaction() {
     DB.stats.revenue = Math.max(0, DB.stats.revenue - t.total);
     DB.stats.totalKg = Math.max(0, DB.stats.totalKg - t.weight);
     if (DB.stats.routeCounts[t.route]) DB.stats.routeCounts[t.route] = Math.max(0, DB.stats.routeCounts[t.route]-1);
-    saveDB(); updateDashboard(); updateDrawerBadges();
+    saveDB(); buildDashboard(); updateDrawerBadges();
     toast('Last transaction undone');
   }
   lastTransaction = null;
@@ -566,7 +568,7 @@ function exportHistoryCSV() {
 function clearHistory() {
   if (!confirm('Clear ALL transaction history? This cannot be undone.')) return;
   DB.comps = []; DB.stats = {transactions:0,revenue:0,totalKg:0,topRoute:'',routeCounts:{}};
-  saveDB(); buildHistory(); updateDashboard(); updateDrawerBadges();
+  saveDB(); buildHistory(); buildDashboard(); updateDrawerBadges();
   toast('History cleared');
 }
 
@@ -878,7 +880,7 @@ document.addEventListener('touchend',e=>{const diff=e.changedTouches[0].clientX-
 // ── Keyboard Shortcuts ──
 document.addEventListener('keydown',e=>{
   if(e.ctrlKey&&e.shiftKey&&e.key==='E') exportDatabase();
-  if(e.ctrlKey&&e.shiftKey&&e.key==='I'){const input=document.createElement('input');input.type='file';input.accept='.json';input.onchange=importDatabase;input.click();}
+  if(e.ctrlKey&&e.shiftKey&&e.key==='I'){e.preventDefault();importDatabasePrompt();}
 });
 
 // ── Haptic on Buttons ──
@@ -888,7 +890,6 @@ document.addEventListener('click',e=>{
 },{passive:true});
 
 // ── AI Chat ──
-let chatContext = [];
 function toggleChat() {
   const panel=$('chatPanel');
   if(!panel)return;
