@@ -1,5 +1,5 @@
 /* Ocean Fast Ferries · Baggage Pro V300 — Service Worker */
-const CACHE = 'off-v300-cache';
+const CACHE = 'off-v300b-cache';
 const ASSETS = ['/','/index.html','/styles.css','/app.js','/data.js','/utils.js','/map.js','/manifest.json'];
 
 self.addEventListener('install', e => {
