@@ -84,7 +84,9 @@ function closeDrawer() {
 function navigate(view) { closeDrawer(); showView(view); }
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  $(`view-${name}`).classList.add('active');
+  const viewEl = $(`view-${name}`);
+  if (!viewEl) { console.warn('View not found:', name); return; }
+  viewEl.classList.add('active');
   document.querySelectorAll('.drawer-item').forEach(el => el.classList.remove('active'));
   const item = document.querySelector(`.drawer-item[data-view="${name}"]`);
   if (item) item.classList.add('active');
@@ -959,14 +961,23 @@ function startVoice() {
 if('serviceWorker' in navigator){
   const SW_CODE=`
     const CACHE='off-v300-cache';
-    const ASSETS=['/','/index.html','/styles.css','/app.js','/data.js','/utils.js','/sw.js','/manifest.json'];
-    self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));self.skipWaiting();});
+    const ASSETS=['/','/index.html','/styles.css','/app.js','/data.js','/utils.js','/map.js','/manifest.json'];
+    self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{}));self.skipWaiting();});
     self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
     self.addEventListener('fetch',e=>{
       if(e.request.method!=='GET')return;
-      e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-        if(res.ok){const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return res;
-      }).catch(()=>caches.match('/index.html')));
+      const url=new URL(e.request.url);
+      const isAppAsset=url.pathname.endsWith('.js')||url.pathname.endsWith('.css')||url.pathname.endsWith('.html')||url.pathname==='/';
+      if(isAppAsset){
+        e.respondWith(fetch(e.request).then(res=>{
+          if(res.ok){const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}
+          return res;
+        }).catch(()=>caches.match(e.request).then(r=>r||caches.match('/index.html'))));
+      }else{
+        e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+          if(res.ok){const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));}return res;
+        }).catch(()=>caches.match('/index.html'))));
+      }
     });`;
   const blob=new Blob([SW_CODE],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(blob)).then(()=>console.log('SW registered')).catch(()=>{});
